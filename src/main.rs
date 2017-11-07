@@ -16,6 +16,12 @@ mod puzfile;
 
 use puzfile::PuzFile;
 
+enum Mode {
+    Select,
+    EditAcross,
+    EditDown,
+}
+
 #[derive(Debug)]
 pub struct Cell {
     truth: Option<char>,
@@ -29,6 +35,9 @@ pub struct Game<R, W: Write> {
     width: u16,
     height: u16,
     grid: Vec<Cell>,
+    cursor_x: u16,
+    cursor_y: u16,
+    mode: Mode,
     stdout: W,
     stdin: R,
 }
@@ -57,6 +66,9 @@ fn init<R: Read, W: Write>(stdin: R, mut stdout: W, p: PuzFile) {
         width: p.width as u16,
         height: p.height as u16,
         grid: grid,
+        cursor_x: 0,
+        cursor_y: 0,
+        mode: Mode::Select,
         stdout: stdout,
         stdin: stdin.keys(),
     };
@@ -92,9 +104,23 @@ fn init<R: Read, W: Write>(stdin: R, mut stdout: W, p: PuzFile) {
     }
 
     g.draw_all();
+    g.start();
 }
 
-impl<R, W: Write> Game<R, W> {
+impl<R, W: Write> Drop for Game<R, W> {
+    fn drop(&mut self) {
+        // When done, restore the defaults to avoid messing with the terminal.
+        write!(
+            self.stdout,
+            "{}{}{}",
+            clear::All,
+            style::Reset,
+            cursor::Goto(1, 1)
+        ).unwrap();
+    }
+}
+
+impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
     fn get(&self, x: u16, y: u16) -> &Cell {
         return &self.grid[y as usize * self.width as usize + x as usize];
     }
@@ -171,6 +197,112 @@ impl<R, W: Write> Game<R, W> {
             "{}",
             cursor::Goto(0, (self.height - 1) * 3 + 4)
         ).unwrap();
+    }
+
+    /// Calculate the y coordinate of the cell "above" a given y coordinate.
+    ///
+    /// This wraps when _y = 0_.
+    fn up(&self, y: u16) -> u16 {
+        if y == 0 {
+            // Upper bound reached. Wrap around.
+            self.height - 1
+        } else {
+            y - 1
+        }
+    }
+
+    /// Calculate the y coordinate of the cell "below" a given y coordinate.
+    ///
+    /// This wraps when _y = h - 1_.
+    fn down(&self, y: u16) -> u16 {
+        if y + 1 == self.height {
+            // Lower bound reached. Wrap around.
+            0
+        } else {
+            y + 1
+        }
+    }
+
+    /// Calculate the x coordinate of the cell "left to" a given x coordinate.
+    ///
+    /// This wraps when _x = 0_.
+    fn left(&self, x: u16) -> u16 {
+        if x == 0 {
+            // Lower bound reached. Wrap around.
+            self.width - 1
+        } else {
+            x - 1
+        }
+    }
+
+    /// Calculate the x coordinate of the cell "left to" a given x coordinate.
+    ///
+    /// This wraps when _x = w - 1_.
+    fn right(&self, x: u16) -> u16 {
+        if x + 1 == self.width {
+            // Upper bound reached. Wrap around.
+            0
+        } else {
+            x + 1
+        }
+    }
+
+    /// Enter an appropriate edit mode for the current cursor position.
+    /// TODO: should default to last-used edit mode.
+    fn edit_mode(&mut self) {
+        match self.get(self.cursor_x, self.cursor_y).clue_across {
+            Some(_) => {
+                self.mode = Mode::EditAcross;
+                return;
+            }
+            None => {}
+        }
+
+        match self.get(self.cursor_x, self.cursor_y).clue_down {
+            Some(_) => {
+                self.mode = Mode::EditDown;
+                return;
+            }
+            None => {}
+        }
+    }
+
+    fn select_mode(&mut self) {
+        self.mode = Mode::Select;
+    }
+
+    fn start(&mut self) {
+        loop {
+            // Read a single byte from stdin.
+            let b = self.stdin.next().unwrap().unwrap();
+            use termion::event::Key::*;
+
+            match self.mode {
+                Mode::Select => 
+                    match b {
+                        Char('h') | Char('a') | Left => self.cursor_x = self.left(self.cursor_x),
+                        Char('j') | Char('s') | Down => self.cursor_y = self.down(self.cursor_y),
+                        Char('k') | Char('w') | Up => self.cursor_y = self.up(self.cursor_y),
+                        Char('l') | Char('d') | Right => self.cursor_x = self.right(self.cursor_x),
+                        Char('q') | Ctrl('c') => break,
+                        Char('\n') => self.edit_mode(),
+                        _ => {} 
+                    }
+                _ => match b {
+                    Char('\n') => self.select_mode(),
+                    Char('q') | Ctrl('c') => break,
+                    _ => {} 
+                }
+            }
+
+            // Make sure the cursor is placed on the current position.
+            write!(
+                self.stdout,
+                "{}",
+                cursor::Goto(self.cursor_x * 4 + 2, self.cursor_y * 3 + 2)
+            ).unwrap();
+            self.stdout.flush().unwrap();
+        }
     }
 }
 
