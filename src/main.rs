@@ -166,19 +166,38 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
 
         match self.get(x, y).truth {
             Some(_t) => {
+                // Use an  arrow on the right border if this is the selected cell
+                // and we're in Mode::EditAcross
+                
+                let right_border = match self.mode {
+                    Mode::EditAcross if self.cursor_x == x && self.cursor_y == y => "\u{25B6}",
+                    _ => "\u{2503}",
+                };
+
                 match self.get(x, y).clue_number {
                     Some(n) => write!(self.stdout, "{:<3}\u{2503}", n).unwrap(),
                     None => write!(self.stdout, "   \u{2503}").unwrap(),
                 };
                 write!(self.stdout, "{}", cursor::Goto(x * 4 + 1, y * 3 + 2)).unwrap();
+
                 match self.get(x, y).guess {
-                    Some(g) => write!(self.stdout, " {} \u{2503}", g).unwrap(),
-                    None => write!(self.stdout, "   \u{2503}").unwrap()
+                    Some(g) => write!(self.stdout, " {} {}", g, right_border).unwrap(),
+                    None => write!(self.stdout, "   {}", right_border).unwrap()
                 };
                 write!(self.stdout, "{}", cursor::Goto(x * 4 + 1, y * 3 + 3)).unwrap();
-                write!(self.stdout, "\u{2501}\u{2501}\u{2501}\u{254B}").unwrap();
+
+                // Draw a downward-pointing arrow in the bottom border if this is the
+                // selected cell and we're in Mode::EditDown
+
+                match self.mode {
+                    Mode::EditDown if self.cursor_x == x && self.cursor_y == y => 
+                        write!(self.stdout, "\u{2501}\u{25BC}\u{2501}\u{254B}").unwrap(),
+                    _ => write!(self.stdout, "\u{2501}\u{2501}\u{2501}\u{254B}").unwrap()
+                }
             }
             None => {
+                // Draw a black cell
+                
                 write!(self.stdout, "\u{2588}\u{2588}\u{2588}\u{2503}").unwrap();
                 write!(self.stdout, "{}", cursor::Goto(x * 4 + 1, y * 3 + 2)).unwrap();
                 write!(self.stdout, "\u{2588}\u{2588}\u{2588}\u{2503}").unwrap();
@@ -186,6 +205,13 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
                 write!(self.stdout, "\u{2501}\u{2501}\u{2501}\u{254B}").unwrap();
             }
         }
+    }
+
+    fn draw_cursor_cell(&mut self) {
+        let x = self.cursor_x;
+        let y = self.cursor_y;
+
+        self.draw_cell(x, y);
     }
 
     fn draw_all(&mut self) {
@@ -278,6 +304,7 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
         match self.get(self.cursor_x, self.cursor_y).clue_across {
             Some(_) => {
                 self.mode = Mode::EditAcross;
+                self.draw_cursor_cell();
                 return;
             }
             None => {}
@@ -286,14 +313,27 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
         match self.get(self.cursor_x, self.cursor_y).clue_down {
             Some(_) => {
                 self.mode = Mode::EditDown;
+                self.draw_cursor_cell();
                 return;
             }
             None => {}
         }
     }
 
+    fn edit_direction(&mut self) {
+        self.mode = match self.mode {
+            Mode::EditAcross => Mode::EditDown,
+            Mode::EditDown => Mode::EditAcross,
+            _ => Mode::EditDown
+        };
+
+        self.draw_cursor_cell();
+    }
+
     fn select_mode(&mut self) {
         self.mode = Mode::Select;
+        
+        self.draw_cursor_cell();
     }
 
     fn input(&mut self, c: char) {
@@ -301,17 +341,22 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
         let y = self.cursor_y;
 
         self.get_mut(x, y).guess = Some(c);
-        self.draw_cell(x, y);
 
         self.next();
     }
 
     fn next(&mut self) {
+        let x = self.cursor_x;
+        let y = self.cursor_y;
+
         match self.mode {
             Mode::EditAcross => self.cursor_x = self.edit_right(self.cursor_x, self.cursor_y),
             Mode::EditDown => self.cursor_y = self.edit_down(self.cursor_x, self.cursor_y),
             _ => {}
         }
+
+        self.draw_cell(x, y);
+        self.draw_cursor_cell();
     }
 
     fn start(&mut self) {
@@ -333,6 +378,7 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
                     }
                 _ => match b {
                     Char('\n') | Esc => self.select_mode(),
+                    Char(' ') => self.edit_direction(),
                     Ctrl('c') => break,
                     Char(c) if c.is_alphabetic() => {
                         self.input(c);
