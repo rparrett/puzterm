@@ -1,0 +1,124 @@
+[root]
+name = "puzr"
+version = "0.1.0"
+dependencies = [
+ "encoding 0.2.33 (registry+https://github.com/rust-lang/crates.io-index)",
+ "nom 3.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "termion 1.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "encoding"
+version = "0.2.33"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "encoding-index-japanese 1.20141219.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "encoding-index-korean 1.20141219.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "encoding-index-simpchinese 1.20141219.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "encoding-index-singlebyte 1.20141219.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "encoding-index-tradchinese 1.20141219.5 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "encoding-index-japanese"
+version = "1.20141219.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "encoding_index_tests 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "encoding-index-korean"
+version = "1.20141219.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "encoding_index_tests 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "encoding-index-simpchinese"
+version = "1.20141219.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "encoding_index_tests 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "encoding-index-singlebyte"
+version = "1.20141219.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "encoding_index_tests 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "encoding-index-tradchinese"
+version = "1.20141219.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "encoding_index_tests 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "encoding_index_tests"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "libc"
+version = "0.2.33"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "memchr"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "libc 0.2.33 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "nom"
+version = "3.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "memchr 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "redox_syscall"
+version = "0.1.31"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "redox_termios"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "redox_syscall 0.1.31 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "termion"
+version = "1.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "libc 0.2.33 (registry+https://github.com/rust-lang/crates.io-index)",
+ "redox_syscall 0.1.31 (registry+https://github.com/rust-lang/crates.io-index)",
+ "redox_termios 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[metadata]
+"checksum encoding 0.2.33 (registry+https://github.com/rust-lang/crates.io-index)" = "6b0d943856b990d12d3b55b359144ff341533e516d94098b1d3fc1ac666d36ec"
+"checksum encoding-index-japanese 1.20141219.5 (registry+https://github.com/rust-lang/crates.io-index)" = "04e8b2ff42e9a05335dbf8b5c6f7567e5591d0d916ccef4e0b1710d32a0d0c91"
+"checksum encoding-index-korean 1.20141219.5 (registry+https://github.com/rust-lang/crates.io-index)" = "4dc33fb8e6bcba213fe2f14275f0963fd16f0a02c878e3095ecfdf5bee529d81"
+"checksum encoding-index-simpchinese 1.20141219.5 (registry+https://github.com/rust-lang/crates.io-index)" = "d87a7194909b9118fc707194baa434a4e3b0fb6a5a757c73c3adb07aa25031f7"
+"checksum encoding-index-singlebyte 1.20141219.5 (registry+https://github.com/rust-lang/crates.io-index)" = "3351d5acffb224af9ca265f435b859c7c01537c0849754d3db3fdf2bfe2ae84a"
+"checksum encoding-index-tradchinese 1.20141219.5 (registry+https://github.com/rust-lang/crates.io-index)" = "fd0e20d5688ce3cab59eb3ef3a2083a5c77bf496cb798dc6fcdb75f323890c18"
+"checksum encoding_index_tests 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)" = "a246d82be1c9d791c5dfde9a2bd045fc3cbba3fa2b11ad558f27d01712f00569"
+"checksum libc 0.2.33 (registry+https://github.com/rust-lang/crates.io-index)" = "5ba3df4dcb460b9dfbd070d41c94c19209620c191b0340b929ce748a2bcd42d2"
+"checksum memchr 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)" = "148fab2e51b4f1cfc66da2a7c32981d1d3c083a803978268bb11fe4b86925e7a"
+"checksum nom 3.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "05aec50c70fd288702bcd93284a8444607f3292dbdf2a30de5ea5dcdbe72287b"
+"checksum redox_syscall 0.1.31 (registry+https://github.com/rust-lang/crates.io-index)" = "8dde11f18c108289bef24469638a04dce49da56084f2d50618b226e47eb04509"
+"checksum redox_termios 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "7e891cfe48e9100a70a3b6eb652fef28920c117d366339687bd5576160db0f76"
+"checksum termion 1.5.1 (registry+https://github.com/rust-lang/crates.io-index)" = "689a3bdfaab439fd92bc87df5c4c78417d3cbe537487274e9b0b2dce76e92096"

@@ -1,0 +1,9 @@
+[package]
+name = "puzr"
+version = "0.1.0"
+authors = ["rparrett <robparrett@gmail.com>"]
+
+[dependencies]
+nom = "^3.2"
+encoding = "0.2.33"
+termion = "1.5.1" 
