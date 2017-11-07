@@ -340,7 +340,11 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
         let x = self.cursor_x;
         let y = self.cursor_y;
 
-        self.get_mut(x, y).guess = Some(c);
+        // This doesn't work for certain characters, and I'm okay with that.
+        
+        let upper = c.to_uppercase().collect::<Vec<_>>().swap_remove(0);
+
+        self.get_mut(x, y).guess = Some(upper);
 
         self.next();
     }
