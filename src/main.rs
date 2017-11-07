@@ -373,7 +373,7 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
                         Char('k') | Char('w') | Up => self.cursor_y = self.up(self.cursor_y),
                         Char('l') | Char('d') | Right => self.cursor_x = self.right(self.cursor_x),
                         Char('q') | Ctrl('c') => break,
-                        Char('\n') => self.edit_mode(),
+                        Char('\n') | Char('i') => self.edit_mode(),
                         _ => {} 
                     }
                 _ => match b {
