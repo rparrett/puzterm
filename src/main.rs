@@ -332,7 +332,7 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
                         _ => {} 
                     }
                 _ => match b {
-                    Char('\n') => self.select_mode(),
+                    Char('\n') | Esc => self.select_mode(),
                     Ctrl('c') => break,
                     Char(c) if c.is_alphabetic() => {
                         self.input(c);
