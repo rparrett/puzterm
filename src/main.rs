@@ -165,13 +165,16 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
         write!(self.stdout, "{}", cursor::Goto(x * 4 + 1, y * 3 + 1)).unwrap();
 
         match self.get(x, y).truth {
-            Some(t) => {
+            Some(_t) => {
                 match self.get(x, y).clue_number {
                     Some(n) => write!(self.stdout, "{:<3}\u{2503}", n).unwrap(),
                     None => write!(self.stdout, "   \u{2503}").unwrap(),
                 };
                 write!(self.stdout, "{}", cursor::Goto(x * 4 + 1, y * 3 + 2)).unwrap();
-                write!(self.stdout, " {} \u{2503}", t).unwrap();
+                match self.get(x, y).guess {
+                    Some(g) => write!(self.stdout, " {} \u{2503}", g).unwrap(),
+                    None => write!(self.stdout, "   \u{2503}").unwrap()
+                };
                 write!(self.stdout, "{}", cursor::Goto(x * 4 + 1, y * 3 + 3)).unwrap();
                 write!(self.stdout, "\u{2501}\u{2501}\u{2501}\u{254B}").unwrap();
             }
@@ -247,6 +250,28 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
         }
     }
 
+    fn edit_right(&self, x: u16, y: u16) -> u16 {
+        if x == self.width {
+            return x
+        }
+
+        match self.get(x + 1, y).truth {
+            Some(_) => x + 1,
+            _ => x
+        }
+    }
+
+    fn edit_down(&self, x: u16, y: u16) -> u16 {
+        if x == self.height {
+            return x
+        }
+
+        match self.get(x, y + 1).truth {
+            Some(_) => y + 1,
+            _ => y
+        }
+    }
+
     /// Enter an appropriate edit mode for the current cursor position.
     /// TODO: should default to last-used edit mode.
     fn edit_mode(&mut self) {
@@ -271,6 +296,24 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
         self.mode = Mode::Select;
     }
 
+    fn input(&mut self, c: char) {
+        let x = self.cursor_x;
+        let y = self.cursor_y;
+
+        self.get_mut(x, y).guess = Some(c);
+        self.draw_cell(x, y);
+
+        self.next();
+    }
+
+    fn next(&mut self) {
+        match self.mode {
+            Mode::EditAcross => self.cursor_x = self.edit_right(self.cursor_x, self.cursor_y),
+            Mode::EditDown => self.cursor_y = self.edit_down(self.cursor_x, self.cursor_y),
+            _ => {}
+        }
+    }
+
     fn start(&mut self) {
         loop {
             // Read a single byte from stdin.
@@ -291,6 +334,9 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
                 _ => match b {
                     Char('\n') => self.select_mode(),
                     Char('q') | Ctrl('c') => break,
+                    Char(c) if c.is_alphabetic() => {
+                        self.input(c);
+                    },
                     _ => {} 
                 }
             }
