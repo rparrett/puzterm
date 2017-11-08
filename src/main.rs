@@ -7,7 +7,7 @@ use std::fs::File;
 use std::io::{self, Read, Write};
 use std::path::Path;
 
-use termion::{clear, cursor, style};
+use termion::{clear, cursor, color, style};
 use termion::raw::IntoRawMode;
 use termion::input::TermRead;
 use termion::event::Key;
@@ -41,6 +41,12 @@ pub struct Game<R, W: Write> {
     mode: Mode,
     stdout: W,
     stdin: R,
+}
+
+pub struct GameStatus {
+    cells: u16,
+    guesses: u16,
+    errors: u16
 }
 
 fn init<R: Read, W: Write>(stdin: R, mut stdout: W, p: PuzFile) {
@@ -163,6 +169,32 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
         true
     }
 
+    fn get_status(&self) -> GameStatus {
+        let mut s = GameStatus {
+            cells: 0,
+            guesses: 0,
+            errors: 0
+        };
+
+        for cell in &self.grid {
+            if cell.truth.is_some() {
+                s.cells += 1;
+            }
+
+            if cell.guess.is_some() {
+                s.guesses += 1;
+            }
+           
+            match (cell.truth, cell.guess) {
+                (Some(t), Some(g)) if t != g => s.errors += 1,
+                _ => {}
+                
+            }
+        }
+
+        s
+    }
+
     fn draw_cell(&mut self, x: u16, y: u16) {
         write!(self.stdout, "{}", cursor::Goto(x * 4 + 1, y * 3 + 1)).unwrap();
 
@@ -216,6 +248,36 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
         self.draw_cell(x, y);
     }
 
+    fn draw_status_bar(&mut self) {
+        let (term_width, term_height) = termion::terminal_size().unwrap();
+
+        let s = self.get_status();
+
+        write!(
+            self.stdout,
+            "{}{}{}{}{}",
+            cursor::Goto(0, term_height),
+            color::Bg(color::White),
+            color::Fg(color::Black),
+            " ".repeat(term_width as usize),
+            cursor::Goto(0, term_height),
+        ).unwrap();
+
+        write!(
+            self.stdout,
+            "Puzr 0.1.0 G{}/{} E{}", 
+            s.guesses,
+            s.cells,
+            s.errors,
+        ).unwrap();
+        
+        write!(
+            self.stdout,
+            "{}",
+            style::Reset
+        ).unwrap();
+    }
+
     fn draw_all(&mut self) {
         for y in 0..self.height {
             for x in 0..self.width {
@@ -224,19 +286,17 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
         }
 
         self.draw_clues();
-
-        write!(
-            self.stdout,
-            "{}",
-            cursor::Goto(0, (self.height - 1) * 3 + 4)
-        ).unwrap();
-
+        self.draw_status_bar();
+        self.draw_cursor();
+        
+        self.stdout.flush().unwrap();
     }
 
     fn draw_clues(&mut self) {
         let (term_width, term_height) = termion::terminal_size().unwrap();
        
         let clues_width = term_width - self.width * 4 - 2;
+        let clues_height = term_height -1;
 
         // Across / Down labels aren't truncated, so they'll wrap into
         // the game board if we don't have enough space to display them.
@@ -270,14 +330,22 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
             }
         }
 
-        for i in 0..term_height {
+        for i in 0..clues_height {
             write!(self.stdout, "{}{}", cursor::Goto(self.width * 4 + 3, i as u16 + 1), clear::UntilNewline).unwrap();
         }
 
-        for (i, string) in strings.iter().skip(self.clues_scroll as usize).take(term_height as usize).enumerate() {
+        for (i, string) in strings.iter().skip(self.clues_scroll as usize).take(clues_height as usize).enumerate() {
             write!(self.stdout, "{}", cursor::Goto(self.width * 4 + 3, i as u16 + 1)).unwrap();
             write!(self.stdout, "{}", string).unwrap();
         }
+    }
+
+    fn draw_cursor(&mut self) {
+        write!(
+            self.stdout,
+            "{}",
+            cursor::Goto(self.cursor_x * 4 + 2, self.cursor_y * 3 + 2)
+        ).unwrap();
     }
 
     /// Calculate the y coordinate of the cell "above" a given y coordinate.
@@ -407,6 +475,7 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
 
         self.draw_cell(x, y);
         self.draw_cursor_cell();
+        self.draw_status_bar();
     }
 
     fn clues_scroll_up(&mut self) {
@@ -457,12 +526,8 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
                 }
             }
 
+            self.draw_cursor();
             // Make sure the cursor is placed on the current position.
-            write!(
-                self.stdout,
-                "{}",
-                cursor::Goto(self.cursor_x * 4 + 2, self.cursor_y * 3 + 2)
-            ).unwrap();
             self.stdout.flush().unwrap();
         }
     }
