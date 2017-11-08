@@ -63,8 +63,8 @@ fn init<R: Read, W: Write>(stdin: R, mut stdout: W, p: PuzFile) {
     write!(stdout, "{}", clear::All).unwrap();
 
     let mut g = Game {
-        width: p.width as u16,
-        height: p.height as u16,
+        width: u16::from(p.width),
+        height: u16::from(p.height),
         grid: grid,
         cursor_x: 0,
         cursor_y: 0,
@@ -122,11 +122,11 @@ impl<R, W: Write> Drop for Game<R, W> {
 
 impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
     fn get(&self, x: u16, y: u16) -> &Cell {
-        return &self.grid[y as usize * self.width as usize + x as usize];
+        &self.grid[y as usize * self.width as usize + x as usize]
     }
 
     fn get_mut(&mut self, x: u16, y: u16) -> &mut Cell {
-        return &mut self.grid[y as usize * self.width as usize + x as usize];
+        &mut self.grid[y as usize * self.width as usize + x as usize]
     }
 
     fn has_clue_across(&self, x: u16, y: u16) -> bool {
@@ -142,7 +142,7 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
             return false;
         }
 
-        return true;
+        true
     }
 
     fn has_clue_down(&self, x: u16, y: u16) -> bool {
@@ -158,7 +158,7 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
             return false;
         }
 
-        return true;
+        true
     }
 
     fn draw_cell(&mut self, x: u16, y: u16) {
@@ -301,28 +301,22 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
     /// Enter an appropriate edit mode for the current cursor position.
     /// TODO: should default to last-used edit mode.
     fn edit_mode(&mut self) {
-        match self.get(self.cursor_x, self.cursor_y).clue_across {
-            Some(_) => {
-                self.mode = Mode::EditAcross;
-                self.draw_cursor_cell();
-                return;
-            }
-            None => {}
+        if self.get(self.cursor_x, self.cursor_y).clue_across.is_some() {
+            self.mode = Mode::EditAcross;
+            self.draw_cursor_cell();
+            return;
         }
 
-        match self.get(self.cursor_x, self.cursor_y).clue_down {
-            Some(_) => {
-                self.mode = Mode::EditDown;
-                self.draw_cursor_cell();
-                return;
-            }
-            None => {}
+        if self.get(self.cursor_x, self.cursor_y).clue_down.is_some() {
+            self.mode = Mode::EditDown;
+            self.draw_cursor_cell();
+            return;
         }
     }
 
+    // Change edit direction between across and down
     fn edit_direction(&mut self) {
         self.mode = match self.mode {
-            Mode::EditAcross => Mode::EditDown,
             Mode::EditDown => Mode::EditAcross,
             _ => Mode::EditDown
         };
