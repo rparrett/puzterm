@@ -16,6 +16,7 @@ mod puzfile;
 
 use puzfile::PuzFile;
 
+#[derive(Copy, Clone)]
 enum Mode {
     Select,
     EditAcross,
@@ -39,6 +40,7 @@ pub struct Game<R, W: Write> {
     cursor_y: u16,
     clues_scroll: u16,
     mode: Mode,
+    last_edit_mode: Mode,
     stdout: W,
     stdin: R,
 }
@@ -77,6 +79,7 @@ fn init<R: Read, W: Write>(stdin: R, mut stdout: W, p: PuzFile) {
         cursor_y: 0,
         clues_scroll: 0,
         mode: Mode::Select,
+        last_edit_mode: Mode::EditAcross,
         stdout: stdout,
         stdin: stdin.keys(),
     };
@@ -419,19 +422,21 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
     }
 
     /// Enter an appropriate edit mode for the current cursor position.
-    /// TODO: should default to last-used edit mode.
     fn edit_mode(&mut self) {
-        if self.get(self.cursor_x, self.cursor_y).clue_across.is_some() {
-            self.mode = Mode::EditAcross;
-            self.draw_cursor_cell();
+        // Can't edit a black cell
+        if self.get(self.cursor_x, self.cursor_y).truth.is_none() {
             return;
         }
 
-        if self.get(self.cursor_x, self.cursor_y).clue_down.is_some() {
-            self.mode = Mode::EditDown;
-            self.draw_cursor_cell();
-            return;
-        }
+        self.mode = match (self.get(self.cursor_x, self.cursor_y).clue_across.as_ref(), self.get(self.cursor_x, self.cursor_y).clue_down.as_ref()) {
+            (Some(_), None) => Mode::EditAcross,
+            (None, Some(_)) => Mode::EditDown,
+            _ => self.last_edit_mode
+        };
+
+        self.last_edit_mode = self.mode;
+        
+        self.draw_cursor_cell();
     }
 
     // Change edit direction between across and down
@@ -440,6 +445,8 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
             Mode::EditDown => Mode::EditAcross,
             _ => Mode::EditDown
         };
+        
+        self.last_edit_mode = self.mode;
 
         self.draw_cursor_cell();
     }
