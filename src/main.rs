@@ -4,6 +4,7 @@ extern crate encoding;
 extern crate termion;
 
 use std::fs::File;
+use std::env;
 use std::io::{self, Read, Write};
 use std::path::Path;
 
@@ -544,12 +545,18 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
 }
 
 fn main() {
-    let mut f = File::open(&Path::new("daily-2006-05-11.puz")).unwrap();
+    let filename = env::args().nth(1).expect("Please specify a puzzle file.");
+
+    let mut f = File::open(&Path::new(&filename)).unwrap();
     let mut v = Vec::new();
     f.read_to_end(&mut v).ok();
 
-    let (_, p) = puzfile::parse_all(&v[..]).unwrap();
-
+    let p = match puzfile::parse_all(&v[..]) {
+        nom::IResult::Done(_, p) => p,
+        nom::IResult::Incomplete(x) => panic!("incomplete: {:?}", x),
+        nom::IResult::Error(e) => panic!("error: {:?}", e)
+    };
+    
     let stdout = io::stdout();
     let stdout = stdout.lock();
     let stdout = stdout.into_raw_mode().unwrap();
