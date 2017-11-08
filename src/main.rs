@@ -400,7 +400,7 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
     }
 
     fn edit_right(&self, x: u16, y: u16) -> u16 {
-        if x == self.width {
+        if x + 1 == self.width {
             return x
         }
 
@@ -411,7 +411,7 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
     }
 
     fn edit_down(&self, x: u16, y: u16) -> u16 {
-        if y == self.height {
+        if y + 1 == self.height {
             return y
         }
 
