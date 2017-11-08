@@ -37,6 +37,7 @@ pub struct Game<R, W: Write> {
     grid: Vec<Cell>,
     cursor_x: u16,
     cursor_y: u16,
+    clues_scroll: u16,
     mode: Mode,
     stdout: W,
     stdin: R,
@@ -68,6 +69,7 @@ fn init<R: Read, W: Write>(stdin: R, mut stdout: W, p: PuzFile) {
         grid: grid,
         cursor_x: 0,
         cursor_y: 0,
+        clues_scroll: 0,
         mode: Mode::Select,
         stdout: stdout,
         stdin: stdin.keys(),
@@ -221,11 +223,61 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
             }
         }
 
+        self.draw_clues();
+
         write!(
             self.stdout,
             "{}",
             cursor::Goto(0, (self.height - 1) * 3 + 4)
         ).unwrap();
+
+    }
+
+    fn draw_clues(&mut self) {
+        let (term_width, term_height) = termion::terminal_size().unwrap();
+       
+        let clues_width = term_width - self.width * 4 - 2;
+
+        // Across / Down labels aren't truncated, so they'll wrap into
+        // the game board if we don't have enough space to display them.
+        
+        if clues_width < 6 {
+            return;
+        }
+
+        let mut strings = Vec::new();
+        
+        strings.push(format!("{}Across{}", style::Bold, style::Reset));
+        strings.push("".into());
+
+        for cell in &self.grid {
+            if let Some(ref clue) = cell.clue_across {
+                let mut tmp = format!("{}. {}", cell.clue_number.unwrap(), clue);
+                tmp.truncate(clues_width as usize);
+                strings.push(tmp);
+            }
+        }
+
+        strings.push("".into());
+        strings.push(format!("{}Down{}", style::Bold, style::Reset));
+        strings.push("".into());
+
+        for cell in &self.grid {
+            if let Some(ref clue) = cell.clue_down {
+                let mut tmp = format!("{}. {}", cell.clue_number.unwrap(), clue);
+                tmp.truncate(clues_width as usize);
+                strings.push(tmp);
+            }
+        }
+
+        for i in 0..term_height {
+            write!(self.stdout, "{}{}", cursor::Goto(self.width * 4 + 3, i as u16 + 1), clear::UntilNewline).unwrap();
+        }
+
+        for (i, string) in strings.iter().skip(self.clues_scroll as usize).take(term_height as usize).enumerate() {
+            write!(self.stdout, "{}", cursor::Goto(self.width * 4 + 3, i as u16 + 1)).unwrap();
+            write!(self.stdout, "{}", string).unwrap();
+        }
     }
 
     /// Calculate the y coordinate of the cell "above" a given y coordinate.
@@ -357,6 +409,22 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
         self.draw_cursor_cell();
     }
 
+    fn clues_scroll_up(&mut self) {
+        if self.clues_scroll <= 5 {
+            self.clues_scroll = 0;
+        } else {
+            self.clues_scroll -= 5;
+        }
+        
+        self.draw_clues();
+    }
+
+    fn clues_scroll_down(&mut self) {
+        self.clues_scroll += 5;
+        
+        self.draw_clues();
+    }
+
     fn start(&mut self) {
         loop {
             // Read a single byte from stdin.
@@ -366,6 +434,8 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
             match self.mode {
                 Mode::Select => 
                     match b {
+                        PageUp => self.clues_scroll_up(),
+                        PageDown => self.clues_scroll_down(),
                         Char('h') | Char('a') | Left => self.cursor_x = self.left(self.cursor_x),
                         Char('j') | Char('s') | Down => self.cursor_y = self.down(self.cursor_y),
                         Char('k') | Char('w') | Up => self.cursor_y = self.up(self.cursor_y),
@@ -375,6 +445,8 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
                         _ => {} 
                     }
                 _ => match b {
+                    PageUp => self.clues_scroll_up(),
+                    PageDown => self.clues_scroll_down(),
                     Char('\n') | Esc => self.select_mode(),
                     Char(' ') => self.edit_direction(),
                     Ctrl('c') => break,
