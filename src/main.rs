@@ -439,7 +439,7 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
         self.draw_cursor_cell();
     }
 
-    // Change edit direction between across and down
+    /// Change edit direction between across and down
     fn edit_direction(&mut self) {
         self.mode = match self.mode {
             Mode::EditDown => Mode::EditAcross,
@@ -451,12 +451,14 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
         self.draw_cursor_cell();
     }
 
+    /// Enter select mode
     fn select_mode(&mut self) {
         self.mode = Mode::Select;
         
         self.draw_cursor_cell();
     }
 
+    /// Put a guess into the current cell
     fn input(&mut self, c: char) {
         let x = self.cursor_x;
         let y = self.cursor_y;
@@ -470,6 +472,7 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
         self.next();
     }
 
+    /// Move the cursor to the next cell to be edited
     fn next(&mut self) {
         let x = self.cursor_x;
         let y = self.cursor_y;
