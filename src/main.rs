@@ -411,8 +411,8 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
     }
 
     fn edit_down(&self, x: u16, y: u16) -> u16 {
-        if x == self.height {
-            return x
+        if y == self.height {
+            return y
         }
 
         match self.get(x, y + 1).truth {
