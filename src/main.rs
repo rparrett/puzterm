@@ -218,7 +218,7 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
                 write!(self.stdout, "{}", cursor::Goto(x * 4 + 1, y * 3 + 2)).unwrap();
 
                 match self.get(x, y).guess {
-                    Some(g) => write!(self.stdout, " {} {}", g, right_border).unwrap(),
+                    Some(g) => write!(self.stdout, " {}{}{} {}", style::Bold, g, style::Reset, right_border).unwrap(),
                     None => write!(self.stdout, "   {}", right_border).unwrap()
                 };
                 write!(self.stdout, "{}", cursor::Goto(x * 4 + 1, y * 3 + 3)).unwrap();
