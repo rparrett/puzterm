@@ -269,7 +269,7 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
 
         write!(
             self.stdout,
-            "Puzr 0.1.0 G{}/{} E{}", 
+            "puzcli 0.1.0 G{}/{} E{}", 
             s.guesses,
             s.cells,
             s.errors,

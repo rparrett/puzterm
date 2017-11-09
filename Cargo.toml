@@ -1,5 +1,5 @@
 [package]
-name = "puzr"
+name = "puzcli"
 version = "0.1.0"
 authors = ["rparrett <robparrett@gmail.com>"]
 
