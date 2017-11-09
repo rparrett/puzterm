@@ -473,6 +473,15 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
         self.next();
     }
 
+    /// Removes the guess at the current cell
+    fn unguess(&mut self) {
+        let x = self.cursor_x;
+        let y = self.cursor_y;
+
+        self.get_mut(x, y).guess = None;
+        self.draw_cursor_cell();
+    }
+
     /// Move the cursor to the next cell to be edited
     fn next(&mut self) {
         let x = self.cursor_x;
@@ -525,6 +534,7 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
                         _ => {} 
                     }
                 _ => match b {
+                    Delete => self.unguess(),
                     PageUp => self.clues_scroll_up(),
                     PageDown => self.clues_scroll_down(),
                     Char('\n') | Esc => self.select_mode(),
