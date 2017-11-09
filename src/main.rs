@@ -480,6 +480,46 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
         self.draw_clues();
     }
 
+    fn edit_move_up(&mut self) {
+        let x = self.cursor_x;
+        let y = self.cursor_y;
+
+        self.cursor_y = self.edit_up(self.cursor_x, self.cursor_y);
+        
+        self.draw_cell(x, y);
+        self.draw_cursor_cell();
+    }
+
+    fn edit_move_down(&mut self) {
+        let x = self.cursor_x;
+        let y = self.cursor_y;
+
+        self.cursor_y = self.edit_down(self.cursor_x, self.cursor_y);
+        
+        self.draw_cell(x, y);
+        self.draw_cursor_cell();
+    }
+
+    fn edit_move_left(&mut self) {
+        let x = self.cursor_x;
+        let y = self.cursor_y;
+
+        self.cursor_x = self.edit_left(self.cursor_x, self.cursor_y);
+        
+        self.draw_cell(x, y);
+        self.draw_cursor_cell();
+    }
+
+    fn edit_move_right(&mut self) {
+        let x = self.cursor_x;
+        let y = self.cursor_y;
+
+        self.cursor_x = self.edit_right(self.cursor_x, self.cursor_y);
+        
+        self.draw_cell(x, y);
+        self.draw_cursor_cell();
+    }
+
     /// Enter an appropriate edit mode for the current cursor position.
     fn edit_mode(&mut self) {
         // Can't edit a black cell
@@ -547,8 +587,8 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
         let y = self.cursor_y;
 
         match self.mode {
-            Mode::EditAcross => self.cursor_x = self.edit_right(self.cursor_x, self.cursor_y),
-            Mode::EditDown => self.cursor_y = self.edit_down(self.cursor_x, self.cursor_y),
+            Mode::EditAcross => self.edit_move_right(),
+            Mode::EditDown => self.edit_move_down(),
             _ => {}
         }
 
@@ -563,8 +603,8 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
         let y = self.cursor_y;
 
         match self.mode {
-            Mode::EditAcross => self.cursor_x = self.edit_left(self.cursor_x, self.cursor_y),
-            Mode::EditDown => self.cursor_y = self.edit_up(self.cursor_x, self.cursor_y),
+            Mode::EditAcross => self.edit_move_left(),
+            Mode::EditDown => self.edit_move_up(),
             _ => {}
         }
 
@@ -612,8 +652,11 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
                     Delete => self.unguess(),
                     PageUp => self.clues_scroll_up(),
                     PageDown => self.clues_scroll_down(),
-                    Backspace | Left | Up => self.prev(),
-                    Right | Down => self.next(),
+                    Backspace => self.prev(), 
+                    Left => self.edit_move_left(),
+                    Down => self.edit_move_down(),
+                    Up => self.edit_move_up(),
+                    Right => self.edit_move_right(),
                     Char('\n') | Esc => self.select_mode(),
                     Char(' ') => self.edit_direction(),
                     Ctrl('c') => break,
