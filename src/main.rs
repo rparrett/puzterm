@@ -538,6 +538,7 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
 
         self.get_mut(x, y).guess = None;
         self.draw_cursor_cell();
+        self.draw_status_bar();
     }
 
     /// Move the cursor to the next cell to be edited
