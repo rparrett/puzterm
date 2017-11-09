@@ -17,7 +17,7 @@ pub struct PuzFile {
     pub version: String,
     pub reserved_1: u16,
     pub scrambled_checksum: u16,
-    pub reserved_2: String,
+    pub reserved_2: Vec<u8>,
     pub width: u8,
     pub height: u8,
     pub num_clues: u16,
@@ -52,7 +52,7 @@ named!(pub parse_all<&[u8], PuzFile>,
         version: null_string_ascii >>
         reserved_1: le_u16 >>
         scrambled_checksum: le_u16 >>
-        reserved_2: map_res!(take!(12), str::from_utf8) >>
+        reserved_2: take!(12) >>
         width: le_u8 >>
         height: le_u8 >>
         num_clues: le_u16 >>
