@@ -49,7 +49,7 @@ named!(pub parse_all<&[u8], PuzFile>,
         masked_low_checksum_2: le_u16 >>
         masked_high_checksum_1: le_u16 >>
         masked_high_checksum_2: le_u16 >>
-        version: null_string_ascii >>
+        version: map_res!(take!(4), str::from_utf8) >> 
         reserved_1: le_u16 >>
         scrambled_checksum: le_u16 >>
         reserved_2: take!(12) >>
@@ -73,7 +73,7 @@ named!(pub parse_all<&[u8], PuzFile>,
             masked_low_checksum_2: masked_low_checksum_2,
             masked_high_checksum_1: masked_high_checksum_1,
             masked_high_checksum_2: masked_high_checksum_2,
-            version: version,
+            version: version.into(),
             reserved_1: reserved_1,
             scrambled_checksum: scrambled_checksum,
             reserved_2: reserved_2.into(),
