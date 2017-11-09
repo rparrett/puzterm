@@ -208,8 +208,8 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
                 // and we're in Mode::EditAcross
                 
                 let right_border = match self.mode {
-                    Mode::EditAcross if self.cursor_x == x && self.cursor_y == y => "\u{25B6}",
-                    _ => "\u{2503}",
+                    Mode::EditAcross if self.cursor_x == x && self.cursor_y == y => format!("{}\u{25B6}{}", color::Fg(color::LightRed), style::Reset),
+                    _ => "\u{2503}".to_string(),
                 };
 
                 match self.get(x, y).clue_number {
@@ -229,7 +229,7 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
 
                 match self.mode {
                     Mode::EditDown if self.cursor_x == x && self.cursor_y == y => 
-                        write!(self.stdout, "\u{2501}\u{25BC}\u{2501}\u{254B}").unwrap(),
+                        write!(self.stdout, "\u{2501}{}\u{25BC}{}\u{2501}\u{254B}", color::Fg(color::LightRed), style::Reset).unwrap(),
                     _ => write!(self.stdout, "\u{2501}\u{2501}\u{2501}\u{254B}").unwrap()
                 }
             }
