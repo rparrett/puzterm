@@ -62,8 +62,8 @@ named!(pub parse_all<&[u8], PuzFile>,
         num_clues: le_u16 >>
         unknown_bitmask: le_u16 >>
         scrambled: le_u16 >>
-        puzzle: map_res!(take!(width * height), str::from_utf8) >>
-        state: map_res!(take!(width * height), str::from_utf8) >>
+        puzzle: map_res!(take!(width as usize * height as usize), str::from_utf8) >>
+        state: map_res!(take!(width as usize * height as usize), str::from_utf8) >>
         title: null_string_ascii >>
         author: null_string_ascii >>
         copyright: null_string_ascii >>
