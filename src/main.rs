@@ -309,6 +309,10 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
             return;
         }
 
+        let x = self.cursor_x;
+        let y = self.cursor_y;
+        let cursor_clue_number = self.get(x, y).clue_number;
+
         let mut strings = Vec::new();
         
         strings.push(format!("{}Across{}", style::Bold, style::Reset));
@@ -318,7 +322,13 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
             if let Some(ref clue) = cell.clue_across {
                 let mut tmp = format!("{}. {}", cell.clue_number.unwrap(), clue);
                 tmp.truncate(clues_width as usize);
-                strings.push(tmp);
+                
+                match cursor_clue_number {
+                    Some(n) if n == cell.clue_number.unwrap() => {
+                        strings.push(format!("{}{}{}", style::Bold, tmp, style::Reset));
+                    },
+                    _ => strings.push(tmp)
+                }
             }
         }
 
@@ -330,7 +340,13 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
             if let Some(ref clue) = cell.clue_down {
                 let mut tmp = format!("{}. {}", cell.clue_number.unwrap(), clue);
                 tmp.truncate(clues_width as usize);
-                strings.push(tmp);
+
+                match cursor_clue_number {
+                    Some(n) if n == cell.clue_number.unwrap() => {
+                        strings.push(format!("{}{}{}", style::Bold, tmp, style::Reset));
+                    },
+                    _ => strings.push(tmp)
+                }
             }
         }
 
@@ -442,6 +458,26 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
             Some(_) => y + 1,
             _ => y
         }
+    }
+
+    fn move_up(&mut self)  {
+        self.cursor_y = self.up(self.cursor_y);
+        self.draw_clues();
+    }
+
+    fn move_down(&mut self) {
+        self.cursor_y = self.down(self.cursor_y);
+        self.draw_clues();
+    }
+
+    fn move_left(&mut self) {
+        self.cursor_x = self.left(self.cursor_x);
+        self.draw_clues();
+    }
+
+    fn move_right(&mut self) {
+        self.cursor_x = self.right(self.cursor_x);
+        self.draw_clues();
     }
 
     /// Enter an appropriate edit mode for the current cursor position.
@@ -563,10 +599,10 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
                     match b {
                         PageUp => self.clues_scroll_up(),
                         PageDown => self.clues_scroll_down(),
-                        Char('h') | Char('a') | Left => self.cursor_x = self.left(self.cursor_x),
-                        Char('j') | Char('s') | Down => self.cursor_y = self.down(self.cursor_y),
-                        Char('k') | Char('w') | Up => self.cursor_y = self.up(self.cursor_y),
-                        Char('l') | Char('d') | Right => self.cursor_x = self.right(self.cursor_x),
+                        Char('h') | Char('a') | Left => self.move_left(),
+                        Char('j') | Char('s') | Down => self.move_down(),
+                        Char('k') | Char('w') | Up => self.move_up(),
+                        Char('l') | Char('d') | Right => self.move_right(),
                         Char('q') | Ctrl('c') => break,
                         Char('\n') | Char('i') => self.edit_mode(),
                         _ => {} 
