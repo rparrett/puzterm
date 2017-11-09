@@ -588,7 +588,6 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
             }
 
             self.draw_cursor();
-            // Make sure the cursor is placed on the current position.
             self.stdout.flush().unwrap();
         }
     }
