@@ -400,6 +400,17 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
         }
     }
 
+    fn edit_left(&self, x: u16, y: u16) -> u16 {
+        if x == 0 {
+            return x;
+        }
+
+        match self.get(x - 1, y).truth {
+            Some(_) => x - 1,
+            _ => x
+        }
+    }
+
     fn edit_right(&self, x: u16, y: u16) -> u16 {
         if x + 1 == self.width {
             return x
@@ -408,6 +419,17 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
         match self.get(x + 1, y).truth {
             Some(_) => x + 1,
             _ => x
+        }
+    }
+
+    fn edit_up(&self, x: u16, y: u16) -> u16 {
+        if y == 0 {
+            return y
+        }
+
+        match self.get(x, y - 1).truth {
+            Some(_) => y - 1,
+            _ => y
         }
     }
 
@@ -498,6 +520,22 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
         self.draw_status_bar();
     }
 
+    /// Move the cursor to the previous cell to be edited
+    fn prev(&mut self) {
+        let x = self.cursor_x;
+        let y = self.cursor_y;
+
+        match self.mode {
+            Mode::EditAcross => self.cursor_x = self.edit_left(self.cursor_x, self.cursor_y),
+            Mode::EditDown => self.cursor_y = self.edit_up(self.cursor_x, self.cursor_y),
+            _ => {}
+        }
+
+        self.draw_cell(x, y);
+        self.draw_cursor_cell();
+        self.draw_status_bar();
+    }
+
     fn clues_scroll_up(&mut self) {
         if self.clues_scroll <= 5 {
             self.clues_scroll = 0;
@@ -537,6 +575,7 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
                     Delete => self.unguess(),
                     PageUp => self.clues_scroll_up(),
                     PageDown => self.clues_scroll_down(),
+                    Backspace => self.prev(),
                     Char('\n') | Esc => self.select_mode(),
                     Char(' ') => self.edit_direction(),
                     Ctrl('c') => break,
