@@ -7,11 +7,11 @@ use std::fs::File;
 use std::env;
 use std::io::{self, Read, Write};
 use std::path::Path;
+use std::time;
 
-use termion::{clear, cursor, color, style};
+use termion::{async_stdin, clear, cursor, color, style};
 use termion::raw::IntoRawMode;
 use termion::input::TermRead;
-use termion::event::Key;
 
 mod puzfile;
 
@@ -33,7 +33,7 @@ pub struct Cell {
     clue_down: Option<String>,
 }
 
-pub struct Game<R, W: Write> {
+pub struct Game<W: Write> {
     width: u16,
     height: u16,
     grid: Vec<Cell>,
@@ -43,16 +43,16 @@ pub struct Game<R, W: Write> {
     mode: Mode,
     last_edit_mode: Mode,
     stdout: W,
-    stdin: R,
+    stdin: termion::input::Keys<termion::AsyncReader>,
 }
 
 pub struct GameStatus {
     cells: u16,
     guesses: u16,
-    errors: u16
+    errors: u16,
 }
 
-fn init<R: Read, W: Write>(stdin: R, mut stdout: W, p: PuzFile) {
+fn init<W: Write>(stdin: termion::input::Keys<termion::AsyncReader>, mut stdout: W, p: PuzFile) {
     let mut grid = Vec::new();
 
     for c in p.puzzle.chars() {
@@ -82,7 +82,7 @@ fn init<R: Read, W: Write>(stdin: R, mut stdout: W, p: PuzFile) {
         mode: Mode::Select,
         last_edit_mode: Mode::EditAcross,
         stdout: stdout,
-        stdin: stdin.keys(),
+        stdin: stdin,
     };
 
     let mut clue_number = 1;
@@ -119,7 +119,7 @@ fn init<R: Read, W: Write>(stdin: R, mut stdout: W, p: PuzFile) {
     g.start();
 }
 
-impl<R, W: Write> Drop for Game<R, W> {
+impl<W: Write> Drop for Game<W> {
     fn drop(&mut self) {
         // When done, restore the defaults to avoid messing with the terminal.
         write!(
@@ -132,7 +132,7 @@ impl<R, W: Write> Drop for Game<R, W> {
     }
 }
 
-impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
+impl<W: Write> Game<W> {
     fn get(&self, x: u16, y: u16) -> &Cell {
         &self.grid[y as usize * self.width as usize + x as usize]
     }
@@ -177,7 +177,7 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
         let mut s = GameStatus {
             cells: 0,
             guesses: 0,
-            errors: 0
+            errors: 0,
         };
 
         for cell in &self.grid {
@@ -188,11 +188,11 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
             if cell.guess.is_some() {
                 s.guesses += 1;
             }
-           
+
             match (cell.truth, cell.guess) {
                 (Some(t), Some(g)) if t != g => s.errors += 1,
                 _ => {}
-                
+
             }
         }
 
@@ -206,9 +206,11 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
             Some(_t) => {
                 // Use an  arrow on the right border if this is the selected cell
                 // and we're in Mode::EditAcross
-                
+
                 let right_border = match self.mode {
-                    Mode::EditAcross if self.cursor_x == x && self.cursor_y == y => format!("{}\u{25B6}{}", color::Fg(color::LightRed), style::Reset),
+                    Mode::EditAcross if self.cursor_x == x && self.cursor_y == y => {
+                        format!("{}\u{25B6}{}", color::Fg(color::LightRed), style::Reset)
+                    }
                     _ => "\u{2503}".to_string(),
                 };
 
@@ -219,8 +221,17 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
                 write!(self.stdout, "{}", cursor::Goto(x * 4 + 1, y * 3 + 2)).unwrap();
 
                 match self.get(x, y).guess {
-                    Some(g) => write!(self.stdout, " {}{}{} {}", style::Bold, g, style::Reset, right_border).unwrap(),
-                    None => write!(self.stdout, "   {}", right_border).unwrap()
+                    Some(g) => {
+                        write!(
+                            self.stdout,
+                            " {}{}{} {}",
+                            style::Bold,
+                            g,
+                            style::Reset,
+                            right_border
+                        ).unwrap()
+                    }
+                    None => write!(self.stdout, "   {}", right_border).unwrap(),
                 };
                 write!(self.stdout, "{}", cursor::Goto(x * 4 + 1, y * 3 + 3)).unwrap();
 
@@ -228,14 +239,20 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
                 // selected cell and we're in Mode::EditDown
 
                 match self.mode {
-                    Mode::EditDown if self.cursor_x == x && self.cursor_y == y => 
-                        write!(self.stdout, "\u{2501}{}\u{25BC}{}\u{2501}\u{254B}", color::Fg(color::LightRed), style::Reset).unwrap(),
-                    _ => write!(self.stdout, "\u{2501}\u{2501}\u{2501}\u{254B}").unwrap()
+                    Mode::EditDown if self.cursor_x == x && self.cursor_y == y => {
+                        write!(
+                            self.stdout,
+                            "\u{2501}{}\u{25BC}{}\u{2501}\u{254B}",
+                            color::Fg(color::LightRed),
+                            style::Reset
+                        ).unwrap()
+                    }
+                    _ => write!(self.stdout, "\u{2501}\u{2501}\u{2501}\u{254B}").unwrap(),
                 }
             }
             None => {
                 // Draw a black cell
-                
+
                 write!(self.stdout, "\u{2588}\u{2588}\u{2588}\u{2503}").unwrap();
                 write!(self.stdout, "{}", cursor::Goto(x * 4 + 1, y * 3 + 2)).unwrap();
                 write!(self.stdout, "\u{2588}\u{2588}\u{2588}\u{2503}").unwrap();
@@ -274,12 +291,8 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
             s.cells,
             s.errors,
         ).unwrap();
-        
-        write!(
-            self.stdout,
-            "{}",
-            style::Reset
-        ).unwrap();
+
+        write!(self.stdout, "{}", style::Reset).unwrap();
     }
 
     fn draw_all(&mut self) {
@@ -292,19 +305,19 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
         self.draw_clues();
         self.draw_status_bar();
         self.draw_cursor();
-        
+
         self.stdout.flush().unwrap();
     }
 
     fn draw_clues(&mut self) {
         let (term_width, term_height) = termion::terminal_size().unwrap();
-       
+
         let clues_width = term_width - self.width * 4 - 2;
-        let clues_height = term_height -1;
+        let clues_height = term_height - 1;
 
         // Across / Down labels aren't truncated, so they'll wrap into
         // the game board if we don't have enough space to display them.
-        
+
         if clues_width < 6 {
             return;
         }
@@ -314,7 +327,7 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
         let cursor_clue_number = self.get(x, y).clue_number;
 
         let mut strings = Vec::new();
-        
+
         strings.push(format!("{}Across{}", style::Bold, style::Reset));
         strings.push("".into());
 
@@ -322,12 +335,12 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
             if let Some(ref clue) = cell.clue_across {
                 let mut tmp = format!("{}. {}", cell.clue_number.unwrap(), clue);
                 tmp.truncate(clues_width as usize);
-                
+
                 match cursor_clue_number {
                     Some(n) if n == cell.clue_number.unwrap() => {
                         strings.push(format!("{}{}{}", style::Bold, tmp, style::Reset));
-                    },
-                    _ => strings.push(tmp)
+                    }
+                    _ => strings.push(tmp),
                 }
             }
         }
@@ -344,18 +357,32 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
                 match cursor_clue_number {
                     Some(n) if n == cell.clue_number.unwrap() => {
                         strings.push(format!("{}{}{}", style::Bold, tmp, style::Reset));
-                    },
-                    _ => strings.push(tmp)
+                    }
+                    _ => strings.push(tmp),
                 }
             }
         }
 
         for i in 0..clues_height {
-            write!(self.stdout, "{}{}", cursor::Goto(self.width * 4 + 3, i as u16 + 1), clear::UntilNewline).unwrap();
+            write!(
+                self.stdout,
+                "{}{}",
+                cursor::Goto(self.width * 4 + 3, i as u16 + 1),
+                clear::UntilNewline
+            ).unwrap();
         }
 
-        for (i, string) in strings.iter().skip(self.clues_scroll as usize).take(clues_height as usize).enumerate() {
-            write!(self.stdout, "{}", cursor::Goto(self.width * 4 + 3, i as u16 + 1)).unwrap();
+        for (i, string) in strings
+            .iter()
+            .skip(self.clues_scroll as usize)
+            .take(clues_height as usize)
+            .enumerate()
+        {
+            write!(
+                self.stdout,
+                "{}",
+                cursor::Goto(self.width * 4 + 3, i as u16 + 1)
+            ).unwrap();
             write!(self.stdout, "{}", string).unwrap();
         }
     }
@@ -423,44 +450,44 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
 
         match self.get(x - 1, y).truth {
             Some(_) => x - 1,
-            _ => x
+            _ => x,
         }
     }
 
     fn edit_right(&self, x: u16, y: u16) -> u16 {
         if x + 1 == self.width {
-            return x
+            return x;
         }
 
         match self.get(x + 1, y).truth {
             Some(_) => x + 1,
-            _ => x
+            _ => x,
         }
     }
 
     fn edit_up(&self, x: u16, y: u16) -> u16 {
         if y == 0 {
-            return y
+            return y;
         }
 
         match self.get(x, y - 1).truth {
             Some(_) => y - 1,
-            _ => y
+            _ => y,
         }
     }
 
     fn edit_down(&self, x: u16, y: u16) -> u16 {
         if y + 1 == self.height {
-            return y
+            return y;
         }
 
         match self.get(x, y + 1).truth {
             Some(_) => y + 1,
-            _ => y
+            _ => y,
         }
     }
 
-    fn move_up(&mut self)  {
+    fn move_up(&mut self) {
         self.cursor_y = self.up(self.cursor_y);
         self.draw_clues();
     }
@@ -485,7 +512,7 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
         let y = self.cursor_y;
 
         self.cursor_y = self.edit_up(self.cursor_x, self.cursor_y);
-        
+
         self.draw_cell(x, y);
         self.draw_cursor_cell();
     }
@@ -495,7 +522,7 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
         let y = self.cursor_y;
 
         self.cursor_y = self.edit_down(self.cursor_x, self.cursor_y);
-        
+
         self.draw_cell(x, y);
         self.draw_cursor_cell();
     }
@@ -505,7 +532,7 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
         let y = self.cursor_y;
 
         self.cursor_x = self.edit_left(self.cursor_x, self.cursor_y);
-        
+
         self.draw_cell(x, y);
         self.draw_cursor_cell();
     }
@@ -515,7 +542,7 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
         let y = self.cursor_y;
 
         self.cursor_x = self.edit_right(self.cursor_x, self.cursor_y);
-        
+
         self.draw_cell(x, y);
         self.draw_cursor_cell();
     }
@@ -527,14 +554,17 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
             return;
         }
 
-        self.mode = match (self.get(self.cursor_x, self.cursor_y).clue_across.as_ref(), self.get(self.cursor_x, self.cursor_y).clue_down.as_ref()) {
+        self.mode = match (
+            self.get(self.cursor_x, self.cursor_y).clue_across.as_ref(),
+            self.get(self.cursor_x, self.cursor_y).clue_down.as_ref(),
+        ) {
             (Some(_), None) => Mode::EditAcross,
             (None, Some(_)) => Mode::EditDown,
-            _ => self.last_edit_mode
+            _ => self.last_edit_mode,
         };
 
         self.last_edit_mode = self.mode;
-        
+
         self.draw_cursor_cell();
     }
 
@@ -542,9 +572,9 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
     fn edit_direction(&mut self) {
         self.mode = match self.mode {
             Mode::EditDown => Mode::EditAcross,
-            _ => Mode::EditDown
+            _ => Mode::EditDown,
         };
-        
+
         self.last_edit_mode = self.mode;
 
         self.draw_cursor_cell();
@@ -553,7 +583,7 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
     /// Enter select mode
     fn select_mode(&mut self) {
         self.mode = Mode::Select;
-        
+
         self.draw_cursor_cell();
     }
 
@@ -563,7 +593,7 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
         let y = self.cursor_y;
 
         // This doesn't work for certain characters, and I'm okay with that.
-        
+
         let upper = c.to_uppercase().collect::<Vec<_>>().swap_remove(0);
 
         self.get_mut(x, y).guess = Some(upper);
@@ -619,57 +649,74 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
         } else {
             self.clues_scroll -= 5;
         }
-        
+
         self.draw_clues();
     }
 
     fn clues_scroll_down(&mut self) {
         self.clues_scroll += 5;
-        
+
         self.draw_clues();
     }
 
     fn start(&mut self) {
         loop {
-            // Read a single byte from stdin.
-            let b = self.stdin.next().unwrap().unwrap();
-            use termion::event::Key::*;
-
-            match self.mode {
-                Mode::Select => 
-                    match b {
-                        PageUp => self.clues_scroll_up(),
-                        PageDown => self.clues_scroll_down(),
-                        Char('h') | Char('a') | Left => self.move_left(),
-                        Char('j') | Char('s') | Down => self.move_down(),
-                        Char('k') | Char('w') | Up => self.move_up(),
-                        Char('l') | Char('d') | Right => self.move_right(),
-                        Char('q') | Ctrl('c') => break,
-                        Char('\n') | Char('i') => self.edit_mode(),
-                        _ => {} 
-                    }
-                _ => match b {
-                    Delete => self.unguess(),
-                    PageUp => self.clues_scroll_up(),
-                    PageDown => self.clues_scroll_down(),
-                    Backspace => self.prev(), 
-                    Left => self.edit_move_left(),
-                    Down => self.edit_move_down(),
-                    Up => self.edit_move_up(),
-                    Right => self.edit_move_right(),
-                    Char('\n') | Esc => self.select_mode(),
-                    Char(' ') => self.edit_direction(),
-                    Ctrl('c') => break,
-                    Char(c) if c.is_alphabetic() => {
-                        self.input(c);
-                    },
-                    _ => {} 
-                }
+            if !self.update() {
+                break;
             }
 
-            self.draw_cursor();
-            self.stdout.flush().unwrap();
+            std::thread::sleep(time::Duration::from_millis(10));
         }
+    }
+
+    fn update(&mut self) -> bool {
+        // Read a single byte from stdin.
+
+        while let Some(b) = self.stdin.next() {
+            if let Ok(c) = b {
+                use termion::event::Key::*;
+
+                match self.mode {
+                    Mode::Select => {
+                        match c {
+                            PageUp => self.clues_scroll_up(),
+                            PageDown => self.clues_scroll_down(),
+                            Char('h') | Char('a') | Left => self.move_left(),
+                            Char('j') | Char('s') | Down => self.move_down(),
+                            Char('k') | Char('w') | Up => self.move_up(),
+                            Char('l') | Char('d') | Right => self.move_right(),
+                            Char('q') | Ctrl('c') => return false,
+                            Char('\n') | Char('i') => self.edit_mode(),
+                            _ => {} 
+                        }
+                    }
+                    _ => {
+                        match c {
+                            Delete => self.unguess(),
+                            PageUp => self.clues_scroll_up(),
+                            PageDown => self.clues_scroll_down(),
+                            Backspace => self.prev(), 
+                            Left => self.edit_move_left(),
+                            Down => self.edit_move_down(),
+                            Up => self.edit_move_up(),
+                            Right => self.edit_move_right(),
+                            Char('\n') | Esc => self.select_mode(),
+                            Char(' ') => self.edit_direction(),
+                            Ctrl('c') => return false,
+                            Char(c) if c.is_alphabetic() => {
+                                self.input(c);
+                            }
+                            _ => {} 
+                        }
+                    }
+                }
+
+                self.draw_cursor();
+                self.stdout.flush().unwrap();
+            }
+        }
+
+        return true;
     }
 }
 
@@ -683,15 +730,14 @@ fn main() {
     let p = match puzfile::parse_all(&v[..]) {
         nom::IResult::Done(_, p) => p,
         nom::IResult::Incomplete(x) => panic!("incomplete: {:?}", x),
-        nom::IResult::Error(e) => panic!("error: {:?}", e)
+        nom::IResult::Error(e) => panic!("error: {:?}", e),
     };
-    
+
     let stdout = io::stdout();
     let stdout = stdout.lock();
     let stdout = stdout.into_raw_mode().unwrap();
 
-    let stdin = io::stdin();
-    let stdin = stdin.lock();
+    let stdin = async_stdin().keys();
 
     init(stdin, stdout, p);
 }
