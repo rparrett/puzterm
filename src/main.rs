@@ -58,7 +58,7 @@ pub struct GameStatus {
     errors: u16,
 }
 
-fn init<W: Write>(stdin: termion::input::Keys<termion::AsyncReader>, mut stdout: W, p: PuzFile) {
+fn init<W: Write>(stdin: termion::input::Keys<termion::AsyncReader>, mut stdout: W, p: &PuzFile) {
     let mut grid = Vec::new();
 
     for c in p.puzzle.chars() {
@@ -817,5 +817,5 @@ fn main() {
 
     let stdin = async_stdin().keys();
 
-    init(stdin, stdout, p);
+    init(stdin, stdout, &p);
 }
