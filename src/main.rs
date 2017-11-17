@@ -450,7 +450,7 @@ impl<W: Write> Game<W> {
         }
     }
 
-    /// Calculate the x coordinate of the cell "left to" a given x coordinate.
+    /// Calculate the x coordinate of the cell "right to" a given x coordinate.
     ///
     /// This wraps when _x = w - 1_.
     fn right(&self, x: u16) -> u16 {
@@ -462,6 +462,9 @@ impl<W: Write> Game<W> {
         }
     }
 
+    /// Calculate the x coordinate of the cell "left to" given x, y coordinates.
+    ///
+    /// This does not wrap, and stops at black cells.
     fn edit_left(&self, x: u16, y: u16) -> u16 {
         if x == 0 {
             return x;
@@ -473,6 +476,9 @@ impl<W: Write> Game<W> {
         }
     }
 
+    /// Calculate the x coordinate of the cell "right to" given x, y coordinates.
+    ///
+    /// This does not wrap, and stops at black cells.
     fn edit_right(&self, x: u16, y: u16) -> u16 {
         if x + 1 == self.width {
             return x;
@@ -484,6 +490,9 @@ impl<W: Write> Game<W> {
         }
     }
 
+    /// Calculate the y coordinate of the cell "above" given x, y coordinates.
+    ///
+    /// This does not wrap, and stops at black cells.
     fn edit_up(&self, x: u16, y: u16) -> u16 {
         if y == 0 {
             return y;
@@ -495,6 +504,9 @@ impl<W: Write> Game<W> {
         }
     }
 
+    /// Calculate the y coordinate of the cell "below" given x, y coordinates.
+    ///
+    /// This does not wrap, and stops at black cells.
     fn edit_down(&self, x: u16, y: u16) -> u16 {
         if y + 1 == self.height {
             return y;
