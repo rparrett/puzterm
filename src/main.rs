@@ -2,16 +2,19 @@
 extern crate nom;
 extern crate encoding;
 extern crate termion;
+extern crate stopwatch;
 
 use std::fs::File;
 use std::env;
 use std::io::{self, Read, Write};
 use std::path::Path;
-use std::time;
+use std::time::Duration;
 
 use termion::{async_stdin, clear, cursor, color, style};
 use termion::raw::IntoRawMode;
 use termion::input::TermRead;
+
+use stopwatch::Stopwatch;
 
 mod puzfile;
 
@@ -44,6 +47,8 @@ pub struct Game<W: Write> {
     last_edit_mode: Mode,
     stdout: W,
     stdin: termion::input::Keys<termion::AsyncReader>,
+    stopwatch: Stopwatch,
+    tick: u64,
 }
 
 pub struct GameStatus {
@@ -83,6 +88,8 @@ fn init<W: Write>(stdin: termion::input::Keys<termion::AsyncReader>, mut stdout:
         last_edit_mode: Mode::EditAcross,
         stdout: stdout,
         stdin: stdin,
+        stopwatch: Stopwatch::new(),
+        tick: 0,
     };
 
     let mut clue_number = 1;
@@ -286,10 +293,13 @@ impl<W: Write> Game<W> {
 
         write!(
             self.stdout,
-            "puzcli 0.1.0 G{}/{} E{}", 
+            "puzcli 0.1.0 G{}/{} E{} T{}:{:02}:{:02}",
             s.guesses,
             s.cells,
             s.errors,
+            self.stopwatch.elapsed().as_secs() / 60 / 60,
+            (self.stopwatch.elapsed().as_secs() / 60) % 60,
+            self.stopwatch.elapsed().as_secs() % 60,
         ).unwrap();
 
         write!(self.stdout, "{}", style::Reset).unwrap();
@@ -660,12 +670,22 @@ impl<W: Write> Game<W> {
     }
 
     fn start(&mut self) {
+        self.stopwatch.start();
+
         loop {
+            self.tick += 1;
+
             if !self.update() {
                 break;
             }
 
-            std::thread::sleep(time::Duration::from_millis(10));
+            if self.tick % 10 == 0 {
+                self.draw_status_bar();
+                self.draw_cursor();
+                self.stdout.flush().unwrap();
+            }
+
+            std::thread::sleep(Duration::from_millis(10));
         }
     }
 
@@ -716,7 +736,7 @@ impl<W: Write> Game<W> {
             }
         }
 
-        return true;
+        true
     }
 }
 

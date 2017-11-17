@@ -5,7 +5,8 @@ authors = ["rparrett <robparrett@gmail.com>"]
 
 [dependencies]
 encoding = "0.2.33"
-termion = "1.5.1" 
+termion = "1.5.1"
+stopwatch = "0.0.7"
 
 [dependencies.nom]
 version = "^3.2"
