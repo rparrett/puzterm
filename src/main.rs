@@ -22,9 +22,10 @@ use puzfile::PuzFile;
 
 #[derive(Copy, Clone)]
 enum Mode {
-    Select,
     EditAcross,
     EditDown,
+    Select,
+    Pause,
 }
 
 #[derive(Debug)]
@@ -669,6 +670,58 @@ impl<W: Write> Game<W> {
         self.draw_clues();
     }
 
+    fn pause(&mut self) {
+        self.mode = Mode::Pause;
+
+        write!(self.stdout, "{}", clear::All).unwrap();
+
+        let (term_width, term_height) = termion::terminal_size().unwrap();
+
+        let msg = "Game Paused.";
+
+        write!(
+            self.stdout,
+            "{}{}{}{}",
+            cursor::Goto((term_width - msg.len() as u16) / 2, term_height / 2 - 1),
+            style::Bold,
+            msg,
+            style::Reset
+        ).unwrap();
+
+        let msg = "Press p to continue.";
+
+        write!(
+            self.stdout,
+            "{}{}",
+            cursor::Goto((term_width - msg.len() as u16) / 2, term_height / 2),
+            msg
+        ).unwrap();
+
+        let msg = "Press q to quit.";
+
+        write!(
+            self.stdout,
+            "{}{}",
+            cursor::Goto((term_width - msg.len() as u16) / 2, term_height / 2 + 1),
+            msg
+        ).unwrap();
+
+        self.draw_status_bar();
+        self.stdout.flush().unwrap();
+
+        self.stopwatch.stop();
+    }
+
+    fn unpause(&mut self) {
+        self.mode = Mode::Select;
+
+        write!(self.stdout, "{}", clear::All).unwrap();
+
+        self.draw_all();
+
+        self.stopwatch.start();
+    }
+
     fn start(&mut self) {
         self.stopwatch.start();
 
@@ -690,13 +743,18 @@ impl<W: Write> Game<W> {
     }
 
     fn update(&mut self) -> bool {
-        // Read a single byte from stdin.
-
         while let Some(b) = self.stdin.next() {
             if let Ok(c) = b {
                 use termion::event::Key::*;
 
                 match self.mode {
+                    Mode::Pause => {
+                        match c {
+                            Char('p') | Char('\n') | Esc => self.unpause(),
+                            Char('q') | Ctrl('c') => return false,
+                            _ => {}
+                        }
+                    }
                     Mode::Select => {
                         match c {
                             PageUp => self.clues_scroll_up(),
@@ -705,12 +763,12 @@ impl<W: Write> Game<W> {
                             Char('j') | Char('s') | Down => self.move_down(),
                             Char('k') | Char('w') | Up => self.move_up(),
                             Char('l') | Char('d') | Right => self.move_right(),
-                            Char('q') | Ctrl('c') => return false,
+                            Char('q') | Char('p') | Ctrl('c') | Esc => self.pause(),
                             Char('\n') | Char('i') => self.edit_mode(),
                             _ => {} 
                         }
                     }
-                    _ => {
+                    Mode::EditAcross | Mode::EditDown => {
                         match c {
                             Delete => self.unguess(),
                             PageUp => self.clues_scroll_up(),
