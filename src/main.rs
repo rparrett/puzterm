@@ -24,6 +24,7 @@ use puzfile::PuzFile;
 enum Mode {
     EditAcross,
     EditDown,
+    GameOver,
     Select,
     Pause,
 }
@@ -213,6 +214,12 @@ impl<W: Write> Game<W> {
         }
 
         s
+    }
+
+    fn is_game_over(&self) -> bool {
+        let status = self.get_status();
+
+        status.errors == 0 && status.cells == status.guesses
     }
 
     fn draw_cell(&mut self, x: u16, y: u16) {
@@ -414,6 +421,34 @@ impl<W: Write> Game<W> {
         ).unwrap();
     }
 
+    fn draw_message_screen(&mut self, messages: Vec<String>) {
+        write!(self.stdout, "{}", clear::All).unwrap();
+
+        let (term_width, term_height) = termion::terminal_size().unwrap();
+
+        let height = messages.len() as u16;
+
+        for (i, message) in messages.iter().enumerate() {
+            if i == 0 {
+                write!(self.stdout, "{}", style::Bold).unwrap();
+            }
+
+            write!(
+                self.stdout,
+                "{}{}",
+                cursor::Goto(
+                    (term_width - message.len() as u16) / 2,
+                    term_height / 2 - height / 2 + i as u16,
+                ),
+                message
+            ).unwrap();
+
+            if i == 0 {
+                write!(self.stdout, "{}", style::Reset).unwrap();
+            }
+        }
+    }
+
     /// Calculate the y coordinate of the cell "above" a given y coordinate.
     ///
     /// This wraps when _y = 0_.
@@ -600,6 +635,22 @@ impl<W: Write> Game<W> {
         self.draw_cursor_cell();
     }
 
+    /// Enter game over mode
+    fn game_over_mode(&mut self) {
+        self.mode = Mode::GameOver;
+
+        self.draw_message_screen(vec![
+            "Game Over.".into(),
+            "".into(),
+            "Press any key to quit.".into(),
+        ]);
+
+        self.draw_status_bar();
+        self.stdout.flush().unwrap();
+
+        self.stopwatch.stop();
+    }
+
     /// Put a guess into the current cell
     fn input(&mut self, c: char) {
         let x = self.cursor_x;
@@ -675,38 +726,12 @@ impl<W: Write> Game<W> {
     fn pause(&mut self) {
         self.mode = Mode::Pause;
 
-        write!(self.stdout, "{}", clear::All).unwrap();
-
-        let (term_width, term_height) = termion::terminal_size().unwrap();
-
-        let msg = "Game Paused.";
-
-        write!(
-            self.stdout,
-            "{}{}{}{}",
-            cursor::Goto((term_width - msg.len() as u16) / 2, term_height / 2 - 1),
-            style::Bold,
-            msg,
-            style::Reset
-        ).unwrap();
-
-        let msg = "Press p to continue.";
-
-        write!(
-            self.stdout,
-            "{}{}",
-            cursor::Goto((term_width - msg.len() as u16) / 2, term_height / 2),
-            msg
-        ).unwrap();
-
-        let msg = "Press q to quit.";
-
-        write!(
-            self.stdout,
-            "{}{}",
-            cursor::Goto((term_width - msg.len() as u16) / 2, term_height / 2 + 1),
-            msg
-        ).unwrap();
+        self.draw_message_screen(vec![
+            "Game Paused".into(),
+            "".into(),
+            "Press p to continue.".into(),
+            "Press q to quit.".into(),
+        ]);
 
         self.draw_status_bar();
         self.stdout.flush().unwrap();
@@ -732,6 +757,10 @@ impl<W: Write> Game<W> {
 
             if !self.update() {
                 break;
+            }
+
+            if self.is_game_over() {
+                self.game_over_mode();
             }
 
             if self.tick % 10 == 0 {
@@ -789,6 +818,7 @@ impl<W: Write> Game<W> {
                             _ => {} 
                         }
                     }
+                    Mode::GameOver => return false,
                 }
 
                 self.draw_cursor();
