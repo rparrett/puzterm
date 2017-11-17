@@ -28,6 +28,14 @@ enum Mode {
     Pause,
 }
 
+#[derive(Copy, Clone)]
+enum Direction {
+    Down,
+    Left,
+    Right,
+    Up,
+}
+
 #[derive(Debug)]
 pub struct Cell {
     truth: Option<char>,
@@ -498,61 +506,43 @@ impl<W: Write> Game<W> {
         }
     }
 
-    fn move_up(&mut self) {
-        self.cursor_y = self.up(self.cursor_y);
+    fn select_move(&mut self, direction: Direction) {
+        match direction {
+            Direction::Up => {
+                self.cursor_y = self.up(self.cursor_y);
+            }
+            Direction::Down => {
+                self.cursor_y = self.down(self.cursor_y);
+            }
+            Direction::Left => {
+                self.cursor_x = self.left(self.cursor_x);
+            }
+            Direction::Right => {
+                self.cursor_x = self.right(self.cursor_x);
+            }
+        }
+
         self.draw_clues();
     }
 
-    fn move_down(&mut self) {
-        self.cursor_y = self.down(self.cursor_y);
-        self.draw_clues();
-    }
-
-    fn move_left(&mut self) {
-        self.cursor_x = self.left(self.cursor_x);
-        self.draw_clues();
-    }
-
-    fn move_right(&mut self) {
-        self.cursor_x = self.right(self.cursor_x);
-        self.draw_clues();
-    }
-
-    fn edit_move_up(&mut self) {
+    fn edit_move(&mut self, direction: Direction) {
         let x = self.cursor_x;
         let y = self.cursor_y;
 
-        self.cursor_y = self.edit_up(self.cursor_x, self.cursor_y);
-
-        self.draw_cell(x, y);
-        self.draw_cursor_cell();
-    }
-
-    fn edit_move_down(&mut self) {
-        let x = self.cursor_x;
-        let y = self.cursor_y;
-
-        self.cursor_y = self.edit_down(self.cursor_x, self.cursor_y);
-
-        self.draw_cell(x, y);
-        self.draw_cursor_cell();
-    }
-
-    fn edit_move_left(&mut self) {
-        let x = self.cursor_x;
-        let y = self.cursor_y;
-
-        self.cursor_x = self.edit_left(self.cursor_x, self.cursor_y);
-
-        self.draw_cell(x, y);
-        self.draw_cursor_cell();
-    }
-
-    fn edit_move_right(&mut self) {
-        let x = self.cursor_x;
-        let y = self.cursor_y;
-
-        self.cursor_x = self.edit_right(self.cursor_x, self.cursor_y);
+        match direction {
+            Direction::Up => {
+                self.cursor_y = self.edit_up(self.cursor_x, self.cursor_y);
+            }
+            Direction::Down => {
+                self.cursor_y = self.edit_down(self.cursor_x, self.cursor_y);
+            }
+            Direction::Left => {
+                self.cursor_x = self.edit_left(self.cursor_x, self.cursor_y);
+            }
+            Direction::Right => {
+                self.cursor_x = self.edit_right(self.cursor_x, self.cursor_y);
+            }
+        }
 
         self.draw_cell(x, y);
         self.draw_cursor_cell();
@@ -609,7 +599,7 @@ impl<W: Write> Game<W> {
 
         self.get_mut(x, y).guess = Some(upper);
 
-        self.next();
+        self.edit_next();
     }
 
     /// Removes the guess at the current cell
@@ -623,13 +613,13 @@ impl<W: Write> Game<W> {
     }
 
     /// Move the cursor to the next cell to be edited
-    fn next(&mut self) {
+    fn edit_next(&mut self) {
         let x = self.cursor_x;
         let y = self.cursor_y;
 
         match self.mode {
-            Mode::EditAcross => self.edit_move_right(),
-            Mode::EditDown => self.edit_move_down(),
+            Mode::EditAcross => self.edit_move(Direction::Right),
+            Mode::EditDown => self.edit_move(Direction::Down),
             _ => {}
         }
 
@@ -639,13 +629,13 @@ impl<W: Write> Game<W> {
     }
 
     /// Move the cursor to the previous cell to be edited
-    fn prev(&mut self) {
+    fn edit_prev(&mut self) {
         let x = self.cursor_x;
         let y = self.cursor_y;
 
         match self.mode {
-            Mode::EditAcross => self.edit_move_left(),
-            Mode::EditDown => self.edit_move_up(),
+            Mode::EditAcross => self.edit_move(Direction::Left),
+            Mode::EditDown => self.edit_move(Direction::Up),
             _ => {}
         }
 
@@ -759,10 +749,10 @@ impl<W: Write> Game<W> {
                         match c {
                             PageUp => self.clues_scroll_up(),
                             PageDown => self.clues_scroll_down(),
-                            Char('h') | Char('a') | Left => self.move_left(),
-                            Char('j') | Char('s') | Down => self.move_down(),
-                            Char('k') | Char('w') | Up => self.move_up(),
-                            Char('l') | Char('d') | Right => self.move_right(),
+                            Char('h') | Char('a') | Left => self.select_move(Direction::Left),
+                            Char('j') | Char('s') | Down => self.select_move(Direction::Down),
+                            Char('k') | Char('w') | Up => self.select_move(Direction::Up),
+                            Char('l') | Char('d') | Right => self.select_move(Direction::Right),
                             Char('q') | Char('p') | Ctrl('c') | Esc => self.pause(),
                             Char('\n') | Char('i') => self.edit_mode(),
                             _ => {} 
@@ -773,11 +763,11 @@ impl<W: Write> Game<W> {
                             Delete => self.unguess(),
                             PageUp => self.clues_scroll_up(),
                             PageDown => self.clues_scroll_down(),
-                            Backspace => self.prev(), 
-                            Left => self.edit_move_left(),
-                            Down => self.edit_move_down(),
-                            Up => self.edit_move_up(),
-                            Right => self.edit_move_right(),
+                            Backspace => self.edit_prev(), 
+                            Left => self.edit_move(Direction::Left),
+                            Down => self.edit_move(Direction::Down),
+                            Up => self.edit_move(Direction::Up),
+                            Right => self.edit_move(Direction::Right),
                             Char('\n') | Esc => self.select_mode(),
                             Char(' ') => self.edit_direction(),
                             Ctrl('c') => return false,
