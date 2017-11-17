@@ -421,7 +421,7 @@ impl<W: Write> Game<W> {
         ).unwrap();
     }
 
-    fn draw_message_screen(&mut self, messages: Vec<String>) {
+    fn draw_message_screen(&mut self, messages: &[String]) {
         write!(self.stdout, "{}", clear::All).unwrap();
 
         let (term_width, term_height) = termion::terminal_size().unwrap();
@@ -639,11 +639,13 @@ impl<W: Write> Game<W> {
     fn game_over_mode(&mut self) {
         self.mode = Mode::GameOver;
 
-        self.draw_message_screen(vec![
-            "Game Over.".into(),
-            "".into(),
-            "Press any key to quit.".into(),
-        ]);
+        self.draw_message_screen(
+            &[
+                "Game Over.".into(),
+                "".into(),
+                "Press any key to quit.".into(),
+            ],
+        );
 
         self.draw_status_bar();
         self.stdout.flush().unwrap();
@@ -726,12 +728,14 @@ impl<W: Write> Game<W> {
     fn pause(&mut self) {
         self.mode = Mode::Pause;
 
-        self.draw_message_screen(vec![
-            "Game Paused".into(),
-            "".into(),
-            "Press p to continue.".into(),
-            "Press q to quit.".into(),
-        ]);
+        self.draw_message_screen(
+            &[
+                "Game Paused".into(),
+                "".into(),
+                "Press p to continue.".into(),
+                "Press q to quit.".into(),
+            ],
+        );
 
         self.draw_status_bar();
         self.stdout.flush().unwrap();
