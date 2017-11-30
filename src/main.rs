@@ -309,7 +309,7 @@ impl<W: Write> Game<W> {
 
         write!(
             self.stdout,
-            "puzcli 0.1.0 G{}/{} E{} T{}:{:02}:{:02}",
+            "puzterm 0.1.0 G{}/{} E{} T{}:{:02}:{:02}",
             s.guesses,
             s.cells,
             s.errors,
