@@ -1,3 +1,5 @@
+extern crate nom;
+
 use nom::{le_u16, le_u8};
 
 use std::str;
@@ -100,3 +102,47 @@ named!(pub parse_all<&[u8], PuzFile>,
         })
     )
 );
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn it_works() {
+        let d = include_bytes!("../assets/test1.puz");
+        let p = match parse_all(d) {
+            nom::IResult::Done(_, p) => p,
+            nom::IResult::Incomplete(x) => panic!("incomplete: {:?}", x),
+            nom::IResult::Error(e) => panic!("error: {:?}", e),
+        };
+
+        assert_eq!(p.width, 15);
+        assert_eq!(p.height, 15);
+        assert_eq!(
+            p.puzzle,
+            concat!(
+                "TEST.ZEBRA.TEST",
+                "TEST.ZEBRA.TEST",
+                "MUDSKIPPER.TEST",
+                "PUZ.TEST.WIZARD",
+                "...TEST.GIZZARD",
+                "WIZARD.WIZARD..",
+                "ZEBRA.ZEBRA.PUZ",
+                "TEST.ZEBRA.TEST",
+                "PUZ.ZEBRA.ZEBRA",
+                "..WIZARD.WIZARD",
+                "GIZZARD.TEST...",
+                "WIZARD.TEST.PUZ",
+                "TEST.MUDSKIPPER",
+                "TEST.ZEBRA.TEST",
+                "TEST.ZEBRA.TEST"
+            )
+        );
+        assert_eq!(p.title, "Test: Test Test Test");
+        assert_eq!(p.author, "Created by Test");
+        assert_eq!(p.copyright, "2017 Test");
+        assert_eq!(p.num_clues, 78);
+        assert_eq!(p.clues[0], "Test Across 1");
+        assert_eq!(p.clues[77], "Test Across 39");
+    }
+}
