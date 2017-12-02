@@ -160,4 +160,19 @@ mod tests {
         assert_eq!(p.puzzle, concat!("PUZ", "O.O", "POO"));
         assert_eq!(p.num_clues, 4);
     }
+
+    #[test]
+    fn leading_garbage() {
+        let d = include_bytes!("../assets/test3.puz");
+        let p = match parse_all(d) {
+            nom::IResult::Done(_, p) => p,
+            nom::IResult::Incomplete(x) => panic!("incomplete: {:?}", x),
+            nom::IResult::Error(e) => panic!("error: {:?}", e),
+        };
+
+        assert_eq!(p.width, 3);
+        assert_eq!(p.height, 3);
+        assert_eq!(p.puzzle, concat!("PUZ", "O.O", "POO"));
+        assert_eq!(p.num_clues, 4);
+    }
 }
