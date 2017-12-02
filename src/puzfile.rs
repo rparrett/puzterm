@@ -145,4 +145,19 @@ mod tests {
         assert_eq!(p.clues[0], "Test Across 1");
         assert_eq!(p.clues[77], "Test Across 39");
     }
+
+    #[test]
+    fn small() {
+        let d = include_bytes!("../assets/test2.puz");
+        let p = match parse_all(d) {
+            nom::IResult::Done(_, p) => p,
+            nom::IResult::Incomplete(x) => panic!("incomplete: {:?}", x),
+            nom::IResult::Error(e) => panic!("error: {:?}", e),
+        };
+
+        assert_eq!(p.width, 3);
+        assert_eq!(p.height, 3);
+        assert_eq!(p.puzzle, concat!("PUZ", "O.O", "POO"));
+        assert_eq!(p.num_clues, 4);
+    }
 }
