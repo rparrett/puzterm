@@ -163,15 +163,16 @@ impl<W: Write> Game<W> {
             return false;
         }
 
-        if x > 0 && self.get(x - 1, y).truth.is_some() {
-            return false;
+        // If the cell left is black or out of bounds, and there's at least one
+        // non-black cell right.
+
+        if (x == 0 || self.get(x - 1, y).truth.is_none()) && x < self.width - 1 &&
+            self.get(x + 1, y).truth.is_some()
+        {
+            return true;
         }
 
-        if x > self.width || self.get(x + 1, y).truth.is_none() {
-            return false;
-        }
-
-        true
+        false
     }
 
     fn has_clue_down(&self, x: u16, y: u16) -> bool {
@@ -179,15 +180,16 @@ impl<W: Write> Game<W> {
             return false;
         }
 
-        if y > 0 && self.get(x, y - 1).truth.is_some() {
-            return false;
+        // If the cell above is black or out of bounds, and there's at least one
+        // non-black cell below.
+
+        if (y == 0 || self.get(x, y - 1).truth.is_none()) && y < self.height - 1 &&
+            self.get(x, y + 1).truth.is_some()
+        {
+            return true;
         }
 
-        if y > self.height || self.get(x, y + 1).truth.is_none() {
-            return false;
-        }
-
-        true
+        false
     }
 
     fn get_status(&self) -> GameStatus {
