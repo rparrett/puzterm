@@ -765,8 +765,13 @@ impl<W: Write> Game<W> {
                 break;
             }
 
-            if self.is_game_over() {
-                self.game_over_mode();
+            match self.mode {
+                Mode::GameOver => {}
+                _ => {
+                    if self.is_game_over() {
+                        self.game_over_mode();
+                    }
+                }
             }
 
             if self.tick % 10 == 0 {
