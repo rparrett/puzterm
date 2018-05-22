@@ -226,6 +226,13 @@ impl<W: Write> Game<W> {
 
     fn draw_cell(&mut self, x: u16, y: u16) {
         write!(self.stdout, "{}", cursor::Goto(x * 4 + 1, y * 3 + 1)).unwrap();
+                
+        let cross = match (x == self.width - 1, y == self.height -1) {
+            (true, true) => "\u{251b}",
+            (true, false) => "\u{252b}",
+            (false, true) => "\u{253b}",
+            (false, false) => "\u{254b}"
+        };
 
         match self.get(x, y).truth {
             Some(_t) => {
@@ -272,7 +279,7 @@ impl<W: Write> Game<W> {
                             style::Reset
                         ).unwrap()
                     }
-                    _ => write!(self.stdout, "\u{2501}\u{2501}\u{2501}\u{254B}").unwrap(),
+                    _ => write!(self.stdout, "\u{2501}\u{2501}\u{2501}{}", cross).unwrap(),
                 }
             }
             None => {
@@ -282,7 +289,7 @@ impl<W: Write> Game<W> {
                 write!(self.stdout, "{}", cursor::Goto(x * 4 + 1, y * 3 + 2)).unwrap();
                 write!(self.stdout, "\u{2588}\u{2588}\u{2588}\u{2503}").unwrap();
                 write!(self.stdout, "{}", cursor::Goto(x * 4 + 1, y * 3 + 3)).unwrap();
-                write!(self.stdout, "\u{2501}\u{2501}\u{2501}\u{254B}").unwrap();
+                write!(self.stdout, "\u{2501}\u{2501}\u{2501}{}", cross).unwrap();
             }
         }
     }
