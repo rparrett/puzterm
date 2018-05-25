@@ -1,18 +1,18 @@
 #[macro_use]
 extern crate nom;
 extern crate encoding;
-extern crate termion;
 extern crate stopwatch;
+extern crate termion;
 
-use std::fs::File;
 use std::env;
+use std::fs::File;
 use std::io::{self, Read, Write};
 use std::path::Path;
 use std::time::Duration;
 
-use termion::{async_stdin, clear, cursor, color, style};
-use termion::raw::IntoRawMode;
 use termion::input::TermRead;
+use termion::raw::IntoRawMode;
+use termion::{async_stdin, clear, color, cursor, style};
 
 use stopwatch::Stopwatch;
 
@@ -83,7 +83,7 @@ fn init<W: Write>(stdin: termion::input::Keys<termion::AsyncReader>, mut stdout:
             guess: None,
             clue_number: None,
             clue_across: None, // TODO
-            clue_down: None, // TODO
+            clue_down: None,   // TODO
         });
     }
 
@@ -168,8 +168,8 @@ impl<W: Write> Game<W> {
         // If the cell left is black or out of bounds, and there's at least one
         // non-black cell right.
 
-        if (x == 0 || self.get(x - 1, y).truth.is_none()) && x < self.width - 1 &&
-            self.get(x + 1, y).truth.is_some()
+        if (x == 0 || self.get(x - 1, y).truth.is_none()) && x < self.width - 1
+            && self.get(x + 1, y).truth.is_some()
         {
             return true;
         }
@@ -185,8 +185,8 @@ impl<W: Write> Game<W> {
         // If the cell above is black or out of bounds, and there's at least one
         // non-black cell below.
 
-        if (y == 0 || self.get(x, y - 1).truth.is_none()) && y < self.height - 1 &&
-            self.get(x, y + 1).truth.is_some()
+        if (y == 0 || self.get(x, y - 1).truth.is_none()) && y < self.height - 1
+            && self.get(x, y + 1).truth.is_some()
         {
             return true;
         }
@@ -213,7 +213,6 @@ impl<W: Write> Game<W> {
             match (cell.truth, cell.guess) {
                 (Some(t), Some(g)) if t != g => s.errors += 1,
                 _ => {}
-
             }
         }
 
@@ -228,12 +227,12 @@ impl<W: Write> Game<W> {
 
     fn draw_cell(&mut self, x: u16, y: u16) {
         write!(self.stdout, "{}", cursor::Goto(x * 4 + 1, y * 3 + 1)).unwrap();
-                
-        let cross = match (x == self.width - 1, y == self.height -1) {
+
+        let cross = match (x == self.width - 1, y == self.height - 1) {
             (true, true) => "\u{251b}",
             (true, false) => "\u{252b}",
             (false, true) => "\u{253b}",
-            (false, false) => "\u{254b}"
+            (false, false) => "\u{254b}",
         };
 
         match self.get(x, y).truth {
@@ -255,16 +254,14 @@ impl<W: Write> Game<W> {
                 write!(self.stdout, "{}", cursor::Goto(x * 4 + 1, y * 3 + 2)).unwrap();
 
                 match self.get(x, y).guess {
-                    Some(g) => {
-                        write!(
-                            self.stdout,
-                            " {}{}{} {}",
-                            style::Bold,
-                            g,
-                            style::Reset,
-                            right_border
-                        ).unwrap()
-                    }
+                    Some(g) => write!(
+                        self.stdout,
+                        " {}{}{} {}",
+                        style::Bold,
+                        g,
+                        style::Reset,
+                        right_border
+                    ).unwrap(),
                     None => write!(self.stdout, "   {}", right_border).unwrap(),
                 };
                 write!(self.stdout, "{}", cursor::Goto(x * 4 + 1, y * 3 + 3)).unwrap();
@@ -650,13 +647,11 @@ impl<W: Write> Game<W> {
     fn game_over_mode(&mut self) {
         self.mode = Mode::GameOver;
 
-        self.draw_message_screen(
-            &[
-                "Game Over.".into(),
-                "".into(),
-                "Press any key to quit.".into(),
-            ],
-        );
+        self.draw_message_screen(&[
+            "Game Over.".into(),
+            "".into(),
+            "Press any key to quit.".into(),
+        ]);
 
         self.draw_status_bar();
         self.stdout.flush().unwrap();
@@ -739,14 +734,12 @@ impl<W: Write> Game<W> {
     fn pause(&mut self) {
         self.mode = Mode::Pause;
 
-        self.draw_message_screen(
-            &[
-                "Game Paused".into(),
-                "".into(),
-                "Press p to continue.".into(),
-                "Press q to quit.".into(),
-            ],
-        );
+        self.draw_message_screen(&[
+            "Game Paused".into(),
+            "".into(),
+            "Press p to continue.".into(),
+            "Press q to quit.".into(),
+        ]);
 
         self.draw_status_bar();
         self.stdout.flush().unwrap();
@@ -799,45 +792,39 @@ impl<W: Write> Game<W> {
                 use termion::event::Key::*;
 
                 match self.mode {
-                    Mode::Pause => {
-                        match c {
-                            Char('p') | Char('\n') | Esc => self.unpause(),
-                            Char('q') | Ctrl('c') => return false,
-                            _ => {}
+                    Mode::Pause => match c {
+                        Char('p') | Char('\n') | Esc => self.unpause(),
+                        Char('q') | Ctrl('c') => return false,
+                        _ => {}
+                    },
+                    Mode::Select => match c {
+                        PageUp => self.clues_scroll_up(),
+                        PageDown => self.clues_scroll_down(),
+                        Char('h') | Char('a') | Left => self.select_move(Direction::Left),
+                        Char('j') | Char('s') | Down => self.select_move(Direction::Down),
+                        Char('k') | Char('w') | Up => self.select_move(Direction::Up),
+                        Char('l') | Char('d') | Right => self.select_move(Direction::Right),
+                        Char('q') | Char('p') | Ctrl('c') | Esc => self.pause(),
+                        Char('\n') | Char('i') => self.edit_mode(),
+                        _ => {}
+                    },
+                    Mode::EditAcross | Mode::EditDown => match c {
+                        Delete => self.unguess(),
+                        PageUp => self.clues_scroll_up(),
+                        PageDown => self.clues_scroll_down(),
+                        Backspace => self.edit_prev(),
+                        Left => self.edit_move(Direction::Left),
+                        Down => self.edit_move(Direction::Down),
+                        Up => self.edit_move(Direction::Up),
+                        Right => self.edit_move(Direction::Right),
+                        Char('\n') | Esc => self.select_mode(),
+                        Char(' ') => self.edit_direction(),
+                        Ctrl('c') => return false,
+                        Char(c) if c.is_alphabetic() => {
+                            self.input(c);
                         }
-                    }
-                    Mode::Select => {
-                        match c {
-                            PageUp => self.clues_scroll_up(),
-                            PageDown => self.clues_scroll_down(),
-                            Char('h') | Char('a') | Left => self.select_move(Direction::Left),
-                            Char('j') | Char('s') | Down => self.select_move(Direction::Down),
-                            Char('k') | Char('w') | Up => self.select_move(Direction::Up),
-                            Char('l') | Char('d') | Right => self.select_move(Direction::Right),
-                            Char('q') | Char('p') | Ctrl('c') | Esc => self.pause(),
-                            Char('\n') | Char('i') => self.edit_mode(),
-                            _ => {} 
-                        }
-                    }
-                    Mode::EditAcross | Mode::EditDown => {
-                        match c {
-                            Delete => self.unguess(),
-                            PageUp => self.clues_scroll_up(),
-                            PageDown => self.clues_scroll_down(),
-                            Backspace => self.edit_prev(), 
-                            Left => self.edit_move(Direction::Left),
-                            Down => self.edit_move(Direction::Down),
-                            Up => self.edit_move(Direction::Up),
-                            Right => self.edit_move(Direction::Right),
-                            Char('\n') | Esc => self.select_mode(),
-                            Char(' ') => self.edit_direction(),
-                            Ctrl('c') => return false,
-                            Char(c) if c.is_alphabetic() => {
-                                self.input(c);
-                            }
-                            _ => {} 
-                        }
-                    }
+                        _ => {}
+                    },
                     Mode::GameOver => return false,
                 }
 
@@ -861,7 +848,7 @@ fn main() {
         Ok((_, p)) => p,
         Err(Err::Incomplete(x)) => panic!("incomplete: {:?}", x),
         Err(Err::Error(e)) => panic!("error: {:?}", e),
-        Err(Err::Failure(e)) => panic!("failure: {:?}", e)
+        Err(Err::Failure(e)) => panic!("failure: {:?}", e),
     };
 
     let stdout = io::stdout();

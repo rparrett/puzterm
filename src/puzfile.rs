@@ -5,7 +5,7 @@ use nom::{le_u16, le_u8};
 use std::str;
 
 use encoding::all::ISO_8859_1;
-use encoding::{Encoding, DecoderTrap};
+use encoding::{DecoderTrap, Encoding};
 
 #[derive(Debug)]
 pub struct PuzFile {
@@ -55,7 +55,7 @@ named!(pub parse_all<&[u8], PuzFile>,
         masked_low_checksum_2: le_u16 >>
         masked_high_checksum_1: le_u16 >>
         masked_high_checksum_2: le_u16 >>
-        version: map_res!(take!(4), str::from_utf8) >> 
+        version: map_res!(take!(4), str::from_utf8) >>
         reserved_1: le_u16 >>
         scrambled_checksum: le_u16 >>
         reserved_2: take!(12) >>
@@ -114,7 +114,7 @@ mod tests {
             Ok((_, p)) => p,
             Err(Err::Incomplete(x)) => panic!("incomplete: {:?}", x),
             Err(Err::Error(e)) => panic!("error: {:?}", e),
-            Err(Err::Failure(e)) => panic!("failure: {:?}", e)
+            Err(Err::Failure(e)) => panic!("failure: {:?}", e),
         };
 
         assert_eq!(p.width, 15);
@@ -154,7 +154,7 @@ mod tests {
             Ok((_, p)) => p,
             Err(Err::Incomplete(x)) => panic!("incomplete: {:?}", x),
             Err(Err::Error(e)) => panic!("error: {:?}", e),
-            Err(Err::Failure(e)) => panic!("failure: {:?}", e)
+            Err(Err::Failure(e)) => panic!("failure: {:?}", e),
         };
 
         assert_eq!(p.width, 3);
@@ -170,7 +170,7 @@ mod tests {
             Ok((_, p)) => p,
             Err(Err::Incomplete(x)) => panic!("incomplete: {:?}", x),
             Err(Err::Error(e)) => panic!("error: {:?}", e),
-            Err(Err::Failure(e)) => panic!("failure: {:?}", e)
+            Err(Err::Failure(e)) => panic!("failure: {:?}", e),
         };
 
         assert_eq!(p.width, 3);
@@ -186,7 +186,7 @@ mod tests {
             Ok((_, p)) => p,
             Err(Err::Incomplete(x)) => panic!("incomplete: {:?}", x),
             Err(Err::Error(e)) => panic!("error: {:?}", e),
-            Err(Err::Failure(e)) => panic!("failure: {:?}", e)
+            Err(Err::Failure(e)) => panic!("failure: {:?}", e),
         };
 
         assert_eq!(p.width, 2);
