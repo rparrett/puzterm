@@ -106,6 +106,7 @@ named!(pub parse_all<&[u8], PuzFile>,
 #[cfg(test)]
 mod tests {
     use super::*;
+    use nom::Err;
 
     #[test]
     fn it_works() {
