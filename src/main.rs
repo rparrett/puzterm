@@ -16,6 +16,8 @@ use termion::input::TermRead;
 
 use stopwatch::Stopwatch;
 
+use nom::Err;
+
 mod puzfile;
 
 use puzfile::PuzFile;
@@ -856,9 +858,10 @@ fn main() {
     f.read_to_end(&mut v).ok();
 
     let p = match puzfile::parse_all(&v[..]) {
-        nom::IResult::Done(_, p) => p,
-        nom::IResult::Incomplete(x) => panic!("incomplete: {:?}", x),
-        nom::IResult::Error(e) => panic!("error: {:?}", e),
+        Ok((_, p)) => p,
+        Err(Err::Incomplete(x)) => panic!("incomplete: {:?}", x),
+        Err(Err::Error(e)) => panic!("error: {:?}", e),
+        Err(Err::Failure(e)) => panic!("failure: {:?}", e)
     };
 
     let stdout = io::stdout();

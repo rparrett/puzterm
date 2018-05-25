@@ -111,9 +111,10 @@ mod tests {
     fn it_works() {
         let d = include_bytes!("../assets/test1.puz");
         let p = match parse_all(d) {
-            nom::IResult::Done(_, p) => p,
-            nom::IResult::Incomplete(x) => panic!("incomplete: {:?}", x),
-            nom::IResult::Error(e) => panic!("error: {:?}", e),
+            Ok((_, p)) => p,
+            Err(Err::Incomplete(x)) => panic!("incomplete: {:?}", x),
+            Err(Err::Error(e)) => panic!("error: {:?}", e),
+            Err(Err::Failure(e)) => panic!("failure: {:?}", e)
         };
 
         assert_eq!(p.width, 15);
@@ -150,9 +151,10 @@ mod tests {
     fn small() {
         let d = include_bytes!("../assets/test2.puz");
         let p = match parse_all(d) {
-            nom::IResult::Done(_, p) => p,
-            nom::IResult::Incomplete(x) => panic!("incomplete: {:?}", x),
-            nom::IResult::Error(e) => panic!("error: {:?}", e),
+            Ok((_, p)) => p,
+            Err(Err::Incomplete(x)) => panic!("incomplete: {:?}", x),
+            Err(Err::Error(e)) => panic!("error: {:?}", e),
+            Err(Err::Failure(e)) => panic!("failure: {:?}", e)
         };
 
         assert_eq!(p.width, 3);
@@ -165,9 +167,10 @@ mod tests {
     fn leading_garbage() {
         let d = include_bytes!("../assets/test3.puz");
         let p = match parse_all(d) {
-            nom::IResult::Done(_, p) => p,
-            nom::IResult::Incomplete(x) => panic!("incomplete: {:?}", x),
-            nom::IResult::Error(e) => panic!("error: {:?}", e),
+            Ok((_, p)) => p,
+            Err(Err::Incomplete(x)) => panic!("incomplete: {:?}", x),
+            Err(Err::Error(e)) => panic!("error: {:?}", e),
+            Err(Err::Failure(e)) => panic!("failure: {:?}", e)
         };
 
         assert_eq!(p.width, 3);
@@ -180,9 +183,10 @@ mod tests {
     fn rectangle() {
         let d = include_bytes!("../assets/test4.puz");
         let p = match parse_all(d) {
-            nom::IResult::Done(_, p) => p,
-            nom::IResult::Incomplete(x) => panic!("incomplete: {:?}", x),
-            nom::IResult::Error(e) => panic!("error: {:?}", e),
+            Ok((_, p)) => p,
+            Err(Err::Incomplete(x)) => panic!("incomplete: {:?}", x),
+            Err(Err::Error(e)) => panic!("error: {:?}", e),
+            Err(Err::Failure(e)) => panic!("failure: {:?}", e)
         };
 
         assert_eq!(p.width, 2);
