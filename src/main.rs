@@ -841,7 +841,10 @@ impl<W: Write> Game<W> {
 }
 
 fn main() {
-    let filename = env::args().nth(1).expect("Please specify a puzzle file.");
+    let filename = env::args().nth(1).unwrap_or_else(|| {
+        eprintln!("Usage: puzterm <file>");
+        ::std::process::exit(1);
+    });
 
     let mut f = File::open(&Path::new(&filename)).unwrap();
     let mut v = Vec::new();
