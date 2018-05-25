@@ -61,6 +61,7 @@ pub struct Game<W: Write> {
     stdin: termion::input::Keys<termion::AsyncReader>,
     stopwatch: Stopwatch,
     tick: u64,
+    version: &'static str,
 }
 
 pub struct GameStatus {
@@ -102,6 +103,7 @@ fn init<W: Write>(stdin: termion::input::Keys<termion::AsyncReader>, mut stdout:
         stdin: stdin,
         stopwatch: Stopwatch::new(),
         tick: 0,
+        version: env!("CARGO_PKG_VERSION"),
     };
 
     let mut clue_number = 1;
@@ -317,7 +319,8 @@ impl<W: Write> Game<W> {
 
         write!(
             self.stdout,
-            "puzterm 0.1.0 G{}/{} E{} T{}:{:02}:{:02}",
+            "puzterm {} G{}/{} E{} T{}:{:02}:{:02}",
+            self.version,
             s.guesses,
             s.cells,
             s.errors,
