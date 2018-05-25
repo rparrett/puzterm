@@ -62,6 +62,7 @@ pub struct Game<W: Write> {
     stopwatch: Stopwatch,
     tick: u64,
     version: &'static str,
+    hint_num_errors: bool,
 }
 
 pub struct GameStatus {
@@ -104,6 +105,7 @@ fn init<W: Write>(stdin: termion::input::Keys<termion::AsyncReader>, mut stdout:
         stopwatch: Stopwatch::new(),
         tick: 0,
         version: env!("CARGO_PKG_VERSION"),
+        hint_num_errors: false,
     };
 
     let mut clue_number = 1;
@@ -323,7 +325,10 @@ impl<W: Write> Game<W> {
             self.version,
             s.guesses,
             s.cells,
-            s.errors,
+            match self.hint_num_errors {
+                true => s.errors.to_string(),
+                false => "?".to_string(),
+            },
             self.stopwatch.elapsed().as_secs() / 60 / 60,
             (self.stopwatch.elapsed().as_secs() / 60) % 60,
             self.stopwatch.elapsed().as_secs() % 60,
@@ -760,6 +765,13 @@ impl<W: Write> Game<W> {
         self.stopwatch.start();
     }
 
+    fn toggle_hint_num_errors(&mut self) {
+        self.hint_num_errors = !self.hint_num_errors;
+
+        self.draw_status_bar();
+        self.stdout.flush().unwrap();
+    }
+
     fn start(&mut self) {
         self.stopwatch.start();
 
@@ -808,6 +820,7 @@ impl<W: Write> Game<W> {
                         Char('k') | Char('w') | Up => self.select_move(Direction::Up),
                         Char('l') | Char('d') | Right => self.select_move(Direction::Right),
                         Char('q') | Char('p') | Ctrl('c') | Esc => self.pause(),
+                        Char('e') => self.toggle_hint_num_errors(),
                         Char('\n') | Char('i') => self.edit_mode(),
                         _ => {}
                     },
