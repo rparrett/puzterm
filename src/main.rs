@@ -10,7 +10,8 @@ use std::io::{self, Read, Write};
 use std::path::Path;
 use std::time::Duration;
 
-use termion::input::TermRead;
+use termion::input::{TermRead};
+use termion::event::Key;
 use termion::raw::IntoRawMode;
 use termion::{async_stdin, clear, color, cursor, style};
 
@@ -48,7 +49,7 @@ pub struct Cell {
     clue_down: Option<String>,
 }
 
-pub struct Game<W: Write> {
+pub struct Game<R, W: Write> {
     width: u16,
     height: u16,
     grid: Vec<Cell>,
@@ -58,7 +59,7 @@ pub struct Game<W: Write> {
     mode: Mode,
     last_edit_mode: Mode,
     stdout: W,
-    stdin: termion::input::Keys<termion::AsyncReader>,
+    stdin: R,
     stopwatch: Stopwatch,
     tick: u64,
     version: &'static str,
@@ -71,7 +72,7 @@ pub struct GameStatus {
     errors: u16,
 }
 
-fn init<W: Write>(stdin: termion::input::Keys<termion::AsyncReader>, mut stdout: W, p: &PuzFile) {
+fn init<W: Write, R: Read>(stdin: R, mut stdout: W, p: &PuzFile) {
     let mut grid = Vec::new();
 
     for c in p.puzzle.chars() {
@@ -101,7 +102,7 @@ fn init<W: Write>(stdin: termion::input::Keys<termion::AsyncReader>, mut stdout:
         mode: Mode::Select,
         last_edit_mode: Mode::EditAcross,
         stdout: stdout,
-        stdin: stdin,
+        stdin: stdin.keys(),
         stopwatch: Stopwatch::new(),
         tick: 0,
         version: env!("CARGO_PKG_VERSION"),
@@ -142,7 +143,7 @@ fn init<W: Write>(stdin: termion::input::Keys<termion::AsyncReader>, mut stdout:
     g.start();
 }
 
-impl<W: Write> Drop for Game<W> {
+impl<R, W: Write> Drop for Game<R, W> {
     fn drop(&mut self) {
         // When done, restore the defaults to avoid messing with the terminal.
         write!(
@@ -155,7 +156,7 @@ impl<W: Write> Drop for Game<W> {
     }
 }
 
-impl<W: Write> Game<W> {
+impl<R: Iterator<Item=Result<Key, std::io::Error>>, W: Write> Game<R, W> {
     fn get(&self, x: u16, y: u16) -> &Cell {
         &self.grid[y as usize * self.width as usize + x as usize]
     }
@@ -874,7 +875,7 @@ fn main() {
     let stdout = stdout.lock();
     let stdout = stdout.into_raw_mode().unwrap();
 
-    let stdin = async_stdin().keys();
+    let stdin = async_stdin();
 
     init(stdin, stdout, &p);
 }
