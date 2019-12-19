@@ -10,8 +10,8 @@ use std::io::{self, Read, Write};
 use std::path::Path;
 use std::time::Duration;
 
-use termion::input::{TermRead};
 use termion::event::Key;
+use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 use termion::{async_stdin, clear, color, cursor, style};
 
@@ -152,11 +152,12 @@ impl<R, W: Write> Drop for Game<R, W> {
             clear::All,
             style::Reset,
             cursor::Goto(1, 1)
-        ).unwrap();
+        )
+        .unwrap();
     }
 }
 
-impl<R: Iterator<Item=Result<Key, std::io::Error>>, W: Write> Game<R, W> {
+impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
     fn get(&self, x: u16, y: u16) -> &Cell {
         &self.grid[y as usize * self.width as usize + x as usize]
     }
@@ -173,7 +174,8 @@ impl<R: Iterator<Item=Result<Key, std::io::Error>>, W: Write> Game<R, W> {
         // If the cell left is black or out of bounds, and there's at least one
         // non-black cell right.
 
-        if (x == 0 || self.get(x - 1, y).truth.is_none()) && x < self.width - 1
+        if (x == 0 || self.get(x - 1, y).truth.is_none())
+            && x < self.width - 1
             && self.get(x + 1, y).truth.is_some()
         {
             return true;
@@ -190,7 +192,8 @@ impl<R: Iterator<Item=Result<Key, std::io::Error>>, W: Write> Game<R, W> {
         // If the cell above is black or out of bounds, and there's at least one
         // non-black cell below.
 
-        if (y == 0 || self.get(x, y - 1).truth.is_none()) && y < self.height - 1
+        if (y == 0 || self.get(x, y - 1).truth.is_none())
+            && y < self.height - 1
             && self.get(x, y + 1).truth.is_some()
         {
             return true;
@@ -266,7 +269,8 @@ impl<R: Iterator<Item=Result<Key, std::io::Error>>, W: Write> Game<R, W> {
                         g,
                         style::Reset,
                         right_border
-                    ).unwrap(),
+                    )
+                    .unwrap(),
                     None => write!(self.stdout, "   {}", right_border).unwrap(),
                 };
                 write!(self.stdout, "{}", cursor::Goto(x * 4 + 1, y * 3 + 3)).unwrap();
@@ -275,14 +279,13 @@ impl<R: Iterator<Item=Result<Key, std::io::Error>>, W: Write> Game<R, W> {
                 // selected cell and we're in Mode::EditDown
 
                 match self.mode {
-                    Mode::EditDown if self.cursor_x == x && self.cursor_y == y => {
-                        write!(
-                            self.stdout,
-                            "\u{2501}{}\u{25BC}{}\u{2501}\u{254B}",
-                            color::Fg(color::LightRed),
-                            style::Reset
-                        ).unwrap()
-                    }
+                    Mode::EditDown if self.cursor_x == x && self.cursor_y == y => write!(
+                        self.stdout,
+                        "\u{2501}{}\u{25BC}{}\u{2501}\u{254B}",
+                        color::Fg(color::LightRed),
+                        style::Reset
+                    )
+                    .unwrap(),
                     _ => write!(self.stdout, "\u{2501}\u{2501}\u{2501}{}", cross).unwrap(),
                 }
             }
@@ -318,7 +321,8 @@ impl<R: Iterator<Item=Result<Key, std::io::Error>>, W: Write> Game<R, W> {
             color::Fg(color::Black),
             " ".repeat(term_width as usize),
             cursor::Goto(0, term_height),
-        ).unwrap();
+        )
+        .unwrap();
 
         write!(
             self.stdout,
@@ -333,7 +337,8 @@ impl<R: Iterator<Item=Result<Key, std::io::Error>>, W: Write> Game<R, W> {
             self.stopwatch.elapsed().as_secs() / 60 / 60,
             (self.stopwatch.elapsed().as_secs() / 60) % 60,
             self.stopwatch.elapsed().as_secs() % 60,
-        ).unwrap();
+        )
+        .unwrap();
 
         write!(self.stdout, "{}", style::Reset).unwrap();
     }
@@ -412,7 +417,8 @@ impl<R: Iterator<Item=Result<Key, std::io::Error>>, W: Write> Game<R, W> {
                 "{}{}",
                 cursor::Goto(self.width * 4 + 3, i as u16 + 1),
                 clear::UntilNewline
-            ).unwrap();
+            )
+            .unwrap();
         }
 
         for (i, string) in strings
@@ -425,7 +431,8 @@ impl<R: Iterator<Item=Result<Key, std::io::Error>>, W: Write> Game<R, W> {
                 self.stdout,
                 "{}",
                 cursor::Goto(self.width * 4 + 3, i as u16 + 1)
-            ).unwrap();
+            )
+            .unwrap();
             write!(self.stdout, "{}", string).unwrap();
         }
     }
@@ -435,7 +442,8 @@ impl<R: Iterator<Item=Result<Key, std::io::Error>>, W: Write> Game<R, W> {
             self.stdout,
             "{}",
             cursor::Goto(self.cursor_x * 4 + 2, self.cursor_y * 3 + 2)
-        ).unwrap();
+        )
+        .unwrap();
     }
 
     fn draw_message_screen(&mut self, messages: &[String]) {
@@ -458,7 +466,8 @@ impl<R: Iterator<Item=Result<Key, std::io::Error>>, W: Write> Game<R, W> {
                     term_height / 2 - height / 2 + i as u16,
                 ),
                 message
-            ).unwrap();
+            )
+            .unwrap();
 
             if i == 0 {
                 write!(self.stdout, "{}", style::Reset).unwrap();
