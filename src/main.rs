@@ -330,9 +330,10 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
             self.version,
             s.guesses,
             s.cells,
-            match self.hint_num_errors {
-                true => s.errors.to_string(),
-                false => "?".to_string(),
+            if self.hint_num_errors {
+                s.errors.to_string()
+            } else {
+                "?".to_string()
             },
             self.stopwatch.elapsed().as_secs() / 60 / 60,
             (self.stopwatch.elapsed().as_secs() / 60) % 60,
