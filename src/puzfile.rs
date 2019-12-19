@@ -1,6 +1,6 @@
 extern crate nom;
 
-use nom::{le_u16, le_u8};
+use nom::number::complete::{le_u16, le_u8};
 
 use std::str;
 
