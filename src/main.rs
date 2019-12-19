@@ -82,7 +82,7 @@ fn init<W: Write, R: Read>(stdin: R, mut stdout: W, p: &PuzFile) {
         };
 
         grid.push(Cell {
-            truth: truth,
+            truth,
             guess: None,
             clue_number: None,
             clue_across: None, // TODO
@@ -95,13 +95,13 @@ fn init<W: Write, R: Read>(stdin: R, mut stdout: W, p: &PuzFile) {
     let mut g = Game {
         width: u16::from(p.width),
         height: u16::from(p.height),
-        grid: grid,
+        grid,
         cursor_x: 0,
         cursor_y: 0,
         clues_scroll: 0,
         mode: Mode::Select,
         last_edit_mode: Mode::EditAcross,
-        stdout: stdout,
+        stdout,
         stdin: stdin.keys(),
         stopwatch: Stopwatch::new(),
         tick: 0,
