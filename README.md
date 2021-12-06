@@ -10,4 +10,28 @@ Can currently read non-scrambled across lite (.puz) files without rebuses.
 
 ## Usage
 
-```puzterm file.puz```
+`puzterm file.puz`
+
+## Controls
+
+| Keys        | Action       |
+| ----------- | ------------ |
+| pgup pgdown | scroll clues |
+
+### Normal Mode
+
+| Keys              | Action       |
+| ----------------- | ------------ |
+| wasd hjkl ← → ↑ ↓ | move         |
+| enter i           | edit mode    |
+| e                 | hint         |
+| p q ctrl-c        | pause / quit |
+
+### Edit Mode
+
+| Keys      | Action           |
+| --------- | ---------------- |
+| esc enter | normal mode      |
+| ← → ↑ ↓   | move             |
+| space     | change direction |
+| backspace | previous square  |
