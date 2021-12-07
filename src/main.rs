@@ -775,7 +775,7 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
             "Game Paused".into(),
             "".into(),
             "Press p to continue.".into(),
-            "Press q to quit.".into(),
+            "Press ctrl-c to quit.".into(),
         ]);
 
         self.draw_status_bar();
@@ -838,7 +838,7 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
                 match self.mode {
                     Mode::Pause => match c {
                         Char('p') | Char('\n') | Esc => self.unpause(),
-                        Char('q') | Ctrl('c') => return false,
+                        Ctrl('c') => return false,
                         _ => {}
                     },
                     Mode::Select => match c {
