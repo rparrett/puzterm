@@ -846,7 +846,7 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
                         Right => self.edit_move(Direction::Right),
                         Char('\n') | Esc => self.select_mode(),
                         Char(' ') => self.edit_direction(),
-                        Char(c) if c.is_alphabetic() => {
+                        Char(c) if c.is_alphanumeric() => {
                             self.input(c);
                         }
                         _ => {}
