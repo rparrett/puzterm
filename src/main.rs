@@ -64,6 +64,8 @@ pub struct Game<R, W: Write> {
     tick: u64,
     version: &'static str,
     hint_num_errors: bool,
+    title: String,
+    author: String,
 }
 
 pub struct GameStatus {
@@ -107,6 +109,8 @@ fn init<W: Write, R: Read>(stdin: R, mut stdout: W, p: &PuzFile) {
         tick: 0,
         version: env!("CARGO_PKG_VERSION"),
         hint_num_errors: false,
+        title: p.title.clone(),
+        author: p.author.clone(),
     };
 
     let mut clue_number = 1;
@@ -351,11 +355,25 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
             }
         }
 
+        self.draw_title();
         self.draw_clues();
         self.draw_status_bar();
         self.draw_cursor();
 
         self.stdout.flush().unwrap();
+    }
+
+    fn draw_title(&mut self) {
+        write!(
+            self.stdout,
+            "{}{:.width$}{}{:.width$}",
+            cursor::Goto(0, self.height * 3 + 1),
+            self.title,
+            cursor::Goto(0, self.height * 3 + 2),
+            self.author,
+            width = self.width as usize * 4
+        )
+        .unwrap();
     }
 
     fn draw_clues(&mut self) {
