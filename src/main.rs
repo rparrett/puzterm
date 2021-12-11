@@ -842,8 +842,8 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
                         _ => {}
                     },
                     Mode::Select => match c {
-                        PageUp => self.clues_scroll_up(),
-                        PageDown => self.clues_scroll_down(),
+                        PageUp | Char('[') => self.clues_scroll_up(),
+                        PageDown | Char(']') => self.clues_scroll_down(),
                         Char('h') | Char('a') | Left => self.select_move(Direction::Left),
                         Char('j') | Char('s') | Down => self.select_move(Direction::Down),
                         Char('k') | Char('w') | Up => self.select_move(Direction::Up),

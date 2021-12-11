@@ -14,9 +14,9 @@ Can currently read non-scrambled across lite (.puz) files without rebuses.
 
 ## Controls
 
-| Keys        | Action       |
-| ----------- | ------------ |
-| pgup pgdown | scroll clues |
+| Keys            | Action       |
+| --------------- | ------------ |
+| pgup pgdown [ ] | scroll clues |
 
 ### Normal Mode
 
