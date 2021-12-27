@@ -268,8 +268,9 @@ impl<R: Iterator<Item = Result<Key, std::io::Error>>, W: Write> Game<R, W> {
                 match self.get(x, y).guess {
                     Some(g) => write!(
                         self.stdout,
-                        " {}{}{} {}",
+                        " {}{}{}{} {}",
                         style::Bold,
+                        color::Fg(color::Cyan),
                         g,
                         style::Reset,
                         right_border
